@@ -3,3 +3,7 @@
 stop_commands:
   - "-r"
   - "--run"
+
+#Should the cost calculator get items the player already has?
+#Default: true
+use_already_has_items: true

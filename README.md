@@ -12,4 +12,5 @@ Configs are written in YAML.
 
 ```yaml
 stop_commands: string[]
+use_already_has_items: boolean
 ```
