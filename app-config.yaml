@@ -1,0 +1,4 @@
+#Commands that tell the app to stop accepting input and switch to the next phase
+stop_commands:
+  - "-r"
+  - "--run"
