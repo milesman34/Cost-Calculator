@@ -2,7 +2,7 @@ Cost-Calculator is a command-line program for Python 3 that calculates the costs
 
 # Usage
 
-When using, make sure to separate your inputs with spaces. They should be in the format `amount item_type`, where `amount` is an `int` and `item_type` is a `string`.
+When using, make sure to separate your inputs with spaces. They should be in the format `amount item_type`, where `amount` is an `int` and `item_type` is a `string`. The amount should also not be a negative number or a decimal.
 
 # Config Format
 
