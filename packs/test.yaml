@@ -1,0 +1,33 @@
+# Format
+# item name:
+#   produces: amount item produces (default 1)
+#
+#  items:
+#    - list
+#    - of
+#    - items
+#    - used
+
+chest:
+  items:
+    - "8 wood planks"
+
+furnace:
+  items:
+    - "8 cobblestone"
+
+iron block:
+  items:
+    - "9 iron ingot"
+
+stick:
+  produces: 4
+
+  items:
+    - "2 wood planks"
+
+wood planks:
+  produces: 4
+
+  items:
+    - "1 wood"

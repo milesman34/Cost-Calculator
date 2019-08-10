@@ -13,4 +13,5 @@ Configs are written in YAML.
 ```yaml
 stop_commands: str[]
 use_already_has_items: bool
+current_pack: str
 ```

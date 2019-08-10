@@ -38,6 +38,21 @@ def subtract_dictionaries(
     return delete_zero_values(target), delete_zero_values(subtracter)
 
 
+# Adds two dictionaries together. It does not modify previously existing
+# entries
+def add_dictionaries(target: Dict, adder: Dict) -> Dict:
+    result_dict = {}
+
+    for key, value in target.items():
+        result_dict[key] = value
+
+    for key, value in adder.items():
+        if key not in result_dict:
+            result_dict[key] = value
+
+    return result_dict
+
+
 # Sorts a list of Stacks in descending order
 def sort_stack_list(ls: List["Stack"]) -> List["Stack"]:
     return sorted(ls, key=lambda stack: stack.amount, reverse=True)
@@ -110,14 +125,14 @@ class App:
         self.config = self.load_config_file(path)
 
         # Gets the pack listed in the config
-        self.pack = self.load_config_file(self.config["current_pack"])
+        self.pack = self.load_config_file(self.config["current pack"])
 
-        self.stop_commands = self.config["stop_commands"]
-        self.use_already_has_items = self.config["use_already_has_items"]
+        self.stop_commands = self.config["stop commands"]
+        self.use_already_has_items = self.config["use already has items"]
 
         # Stuff that isn't set immediately
-        self.user_items: Dict[str, int] = None
-        self.already_has_items: Dict[str, int] = None
+        self.user_items: Dict[str, int] = {}
+        self.already_has_items: Dict[str, int] = {}
 
     # Loads a YAML config file
     def load_config_file(self, path: str) -> Dict:
@@ -172,6 +187,29 @@ class App:
 
         print("")
 
+    # Gets items that the user already has
+    def get_already_has_items(self, item_types: List[str]) -> Dict[str, int]:
+        items_dict: Dict[str, int] = {}
+
+        for item_type in item_types:
+            # It does not want to ask about the same item type twice
+            if item_type not in self.already_has_items.keys():
+                try:
+                    amount = int(input("How many {}? ".format(item_type)))
+
+                    if amount < 0:
+                        raise ValueError
+                except ValueError:
+                    print("You must input a positive integer!")
+
+                    sys.exit()
+
+                items_dict[item_type] = amount
+
+        print("")
+
+        return add_dictionaries(self.already_has_items, items_dict)
+
     # Prints the user items
     def print_user_items(self):
         # List of stack items used for printing
@@ -184,11 +222,25 @@ class App:
         else:
             print("No items required!")
 
+    # Runs the app
+    def init(self):
+        self.get_user_items()
+
+        if app.use_already_has_items:
+            # Gets items the user already has by using the list the user has
+            # provided
+            self.already_has_items = app.get_already_has_items(
+                [item_type for item_type, _ in self.user_items.items()])
+
+            # Subtracts items the user already has from the original items
+            self.user_items, self.already_has_items = subtract_dictionaries(
+                self.user_items, self.already_has_items)
+
+        app.print_user_items()
+
 
 # Start the program
 if __name__ == "__main__":
     app = App("app-config.yaml")
 
-    app.get_user_items()
-
-    app.print_user_items()
+    app.init()
