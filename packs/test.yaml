@@ -1,71 +1,71 @@
 anvil:
   items:
-    - "3 iron block"
-    - "4 iron ingot"
+    - 3 iron block
+    - 4 iron ingot
 
 book:
   items:
-    - "3 paper"
-    - "1 leather"
+    - 1 leather
+    - 3 paper
 
 bookshelf:
   items:
-    - "6 wood planks"
-    - "3 book"
+    - 3 book
+    - 6 wood planks
 
 chest:
   items:
-    - "8 wood planks"
+    - 8 wood planks
 
 chest minecart:
   items:
-    - "1 minecart"
-    - "1 chest"
+    - 1 chest
+    - 1 minecart
 
 furnace:
   items:
-    - "8 cobblestone"
+    - 8 cobblestone
 
 iron block:
   items:
-    - "9 iron ingot"
+    - 9 iron ingot
 
 minecart:
   items:
-    - "5 iron ingot"
+    - 5 iron ingot
 
 paper:
   produces: 3
 
   items:
-    - "3 sugar cane"
+    - 3 sugar cane
 
 rail:
   produces: 16
 
   items:
-    - "6 iron ingot"
-    - "1 stick"
+    - 6 iron ingot
+    - 1 stick
 
 stick:
   produces: 4
 
   items:
-    - "2 wood planks"
+    - 2 wood planks
 
 torch:
   produces: 4
 
   items:
-    - "1 stick"
-    - "1 coal"
+    - 1 coal
+    - 1 stick
 
 wood axe:
   items:
-    - "3 wood planks"
-    - "2 stick"
+    - 2 stick
+    - 3 wood planks
 
 wood pickaxe:
   items:
-    - "3 wood planks"
-    - "2 stick"
+    - 2 stick
+    - 3 wood planks

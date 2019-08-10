@@ -235,10 +235,15 @@ class App:
             # It does not want to ask about the same item type twice
             if item_type not in self.already_has_items and item_type not in self.items_asked_about:
                 try:
-                    amount = int(input("How many {}? ".format(item_type)))
+                    string_amount = input("How many {}? ".format(item_type))
 
-                    if amount < 0:
-                        raise ValueError
+                    if string_amount != "":
+                        amount = int(string_amount)
+
+                        if amount < 0:
+                            raise ValueError
+                    else:
+                        amount = 0
                 except ValueError:
                     print("You must input a positive integer!")
 

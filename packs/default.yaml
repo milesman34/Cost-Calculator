@@ -7,3 +7,57 @@
 #    - of
 #    - items
 #    - used
+chest:
+  items:
+    - 8 wood planks
+
+crafting table:
+  items:
+    - 4 wood planks
+
+furnace:
+  items:
+    - 8 cobblestone
+
+item frame:
+  items:
+    - 1 leather
+    - 8 stick
+
+sign:
+  produces: 3
+
+  items:
+    - 1 stick
+    - 6 wood planks
+
+stick:
+  produces: 4
+
+  items:
+    - 2 wood planks
+
+wood axe:
+  items:
+    - 2 stick
+    - 3 wood planks
+
+wood hoe:
+  items:
+    - 2 stick
+    - 2 wood planks
+
+wood pickaxe:
+  items:
+    - 2 stick
+    - 3 wood planks
+
+wood shovel:
+  items:
+    - 2 stick
+    - 1 wood planks
+
+wood sword:
+  items:
+    - 1 stick
+    - 2 wood planks
