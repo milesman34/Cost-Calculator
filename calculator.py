@@ -262,9 +262,27 @@ class App:
             if "produces" not in config:
                 config["produces"] = 1
 
+    # Gets the maximum depth in a list of items
+    def get_max_depth(self, items: Dict[str, int]) -> int:
+        max_depth = 0
+
+        for item_type, amount in items.items():
+            # Depth will automatically be zero if there aren't any more craftable items
+            # Otherwise, it extracts the depth config
+            if item_type in self.pack and self.pack[item_type]["depth"] > max_depth:
+                max_depth = self.pack[item_type]["depth"]
+
+        return max_depth
+
+
     # Calculates the costs of items
-    def calculate_costs(self, items: Dict[str, int]):
-        pass
+    def calculate_costs(self, items: Dict[str, int]) -> Dict[str, int]:
+        max_depth = self.get_max_depth(items)
+
+        if max_depth == 0:
+            return items
+
+        return {}
 
     # Runs the app
     def init(self):
@@ -281,6 +299,8 @@ class App:
                 self.user_items, self.already_has_items)
 
         self.load_recipes()
+
+        self.user_items = self.calculate_costs(self.user_items)
 
         app.print_user_items()
 
