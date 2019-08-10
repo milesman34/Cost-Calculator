@@ -1,3 +1,4 @@
+import math
 import re
 import sys
 import yaml
@@ -113,6 +114,11 @@ def get_depth(items: List[str], pack: Dict[str, Dict]) -> int:
             current_max_depth = depth
 
     return current_max_depth
+
+
+# Gets the cost of one item
+def get_cost(copies: int, requirement: int, produces: int) -> int:
+    return math.ceil(copies / produces) * requirement
 
 
 # Exception raised when the input uses the wrong format
@@ -320,15 +326,20 @@ class App:
                     if item.item_type in self.pack:
                         for sub_item in self.pack[item.item_type]["parsed_items"]:
                             if sub_item.item_type in self.pack:
-                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(sub_item.item_type, sub_item.amount * item.amount))
+                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                    sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
                             else:
-                                depth_dictionary[0].append(Stack(sub_item.item_type, sub_item.amount * item.amount))
+                                depth_dictionary[0].append(Stack(sub_item.item_type, get_cost(
+                                    item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
                     else:
-                        depth_dictionary[0].append(Stack(item.item_type, item.amount))
+                        depth_dictionary[0].append(
+                            Stack(item.item_type, item.amount))
 
                 del depth_dictionary[max_depth]
 
-                new_items = defaultdict(int)
+                new_items: Dict = defaultdict(int)
+
+                print(items)
 
                 # Resets the items dictionary
                 for _, depth_items in depth_dictionary.items():
@@ -339,7 +350,10 @@ class App:
                     self.already_has_items = app.get_already_has_items(
                         [item_type for item_type, _ in new_items.items()], first_items=False, last_items=False)
 
-                    new_items, self.already_has_items = subtract_dictionaries(new_items, self.already_has_items)
+                    new_items, self.already_has_items = subtract_dictionaries(
+                        new_items, self.already_has_items)
+
+                print(new_items)
 
                 return self.calculate_costs(new_items)
 

@@ -45,3 +45,20 @@ stick:
 
   items:
     - "2 wood planks"
+
+torch:
+  produces: 4
+
+  items:
+    - "1 stick"
+    - "1 coal"
+
+wood axe:
+  items:
+    - "3 wood planks"
+    - "2 stick"
+
+wood pickaxe:
+  items:
+    - "3 wood planks"
+    - "2 stick"
