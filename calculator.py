@@ -318,44 +318,49 @@ class App:
         if max_depth == 0:
             return items
         else:
-            while self.get_max_depth(items) > 0:
-                depth_dictionary = self.form_depth_dictionary(items)
+            depth_dictionary = self.form_depth_dictionary(items)
 
-                # Processes items that have the deepest recipes
-                for item in depth_dictionary[max_depth]:
-                    if item.item_type in self.pack:
-                        for sub_item in self.pack[item.item_type]["parsed_items"]:
-                            if sub_item.item_type in self.pack:
-                                if self.pack[item.item_type]["produces"] > 1:
-                                    depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
-                                        sub_item.item_type, get_cost(item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
-                                else:
-                                    depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
-                                        sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
+            # Processes items that have the deepest recipes
+            for item in depth_dictionary[max_depth]:
+                # Is a craftable item
+                if item.item_type in self.pack:
+                    for sub_item in self.pack[item.item_type]["parsed_items"]:
+                        # This component is craftable
+                        if sub_item.item_type in self.pack:
+                            # This code is very bad, but it works
+                            # If the recipe produces multiple instances of an item, then it uses a different ordering of arguments
+                            # It probably shouldn't work, but it gives the correct results
+                            if self.pack[item.item_type]["produces"] > 1:
+                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                    sub_item.item_type, get_cost(item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
                             else:
-                                depth_dictionary[0].append(Stack(sub_item.item_type, get_cost(
-                                    item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
-                    else:
-                        depth_dictionary[0].append(
-                            Stack(item.item_type, item.amount))
+                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                    sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
+                        else:
+                            depth_dictionary[0].append(Stack(sub_item.item_type, get_cost(
+                                item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
+                else:
+                    depth_dictionary[0].append(
+                        Stack(item.item_type, item.amount))
 
-                del depth_dictionary[max_depth]
+            del depth_dictionary[max_depth]
 
-                new_items: Dict = defaultdict(int)
+            new_items: Dict = defaultdict(int)
 
-                # Resets the items dictionary
-                for _, depth_items in depth_dictionary.items():
-                    for item in depth_items:
-                        new_items[item.item_type] += item.amount
+            # Resets the items dictionary
+            for _, depth_items in depth_dictionary.items():
+                for item in depth_items:
+                    new_items[item.item_type] += item.amount
 
-                if self.use_already_has_items:
-                    self.already_has_items = app.get_already_has_items(
-                        [item_type for item_type, _ in new_items.items()], first_items=False, last_items=False)
+            # Gets items the user already has
+            if self.use_already_has_items:
+                self.already_has_items = app.get_already_has_items(
+                    [item_type for item_type, _ in new_items.items()], first_items=False, last_items=False)
 
-                    new_items, self.already_has_items = subtract_dictionaries(
-                        new_items, self.already_has_items)
+                new_items, self.already_has_items = subtract_dictionaries(
+                    new_items, self.already_has_items)
 
-                return self.calculate_costs(new_items)
+            return self.calculate_costs(new_items)
 
         return {}
 
