@@ -1,16 +1,26 @@
-# Format
-# item name:
-#   produces: amount item produces (default 1)
-#
-#  items:
-#    - list
-#    - of
-#    - items
-#    - used
+anvil:
+  items:
+    - "3 iron block"
+    - "4 iron ingot"
+
+book:
+  items:
+    - "3 paper"
+    - "1 leather"
+
+bookshelf:
+  items:
+    - "6 wood planks"
+    - "3 book"
 
 chest:
   items:
     - "8 wood planks"
+
+chest minecart:
+  items:
+    - "1 minecart"
+    - "1 chest"
 
 furnace:
   items:
@@ -20,14 +30,18 @@ iron block:
   items:
     - "9 iron ingot"
 
+minecart:
+  items:
+    - "5 iron ingot"
+
+paper:
+  produces: 3
+
+  items:
+    - "3 sugar cane"
+
 stick:
   produces: 4
 
   items:
     - "2 wood planks"
-
-wood planks:
-  produces: 4
-
-  items:
-    - "1 wood"

@@ -94,6 +94,27 @@ def split_input(input: str) -> Tuple[int, str]:
         return amount, item_type
 
 
+# Gets the depth of a recipe
+def get_depth(items: List[str], pack: Dict[str, Dict]) -> int:
+    # The maximum depth will automatically be the final depth
+    current_max_depth = 0
+
+    for item in items:
+        depth = 1
+
+        amount, item_type = split_input(item)
+
+        if item_type in pack:
+            # The depth goes up for each layer
+            depth += get_depth(pack[item_type]["items"], pack)
+
+        # Updates the current maximum if needed
+        if depth > current_max_depth:
+            current_max_depth = depth
+
+    return current_max_depth
+
+
 # Exception raised when the input uses the wrong format
 class InputFormatException(Exception):
     pass
@@ -182,14 +203,19 @@ class App:
         return dict(items_counter)
 
     # Gets the user items from the user
-    def get_user_items(self):
-        self.user_items = self.get_items_from_user("Enter items:")
+    def get_user_items(self) -> Dict[str, int]:
+        user_items = delete_zero_values(
+            self.get_items_from_user("Enter items:"))
 
         print("")
+
+        return user_items
 
     # Gets items that the user already has
     def get_already_has_items(self, item_types: List[str]) -> Dict[str, int]:
         items_dict: Dict[str, int] = {}
+
+        print("Enter items you already have:\n")
 
         for item_type in item_types:
             # It does not want to ask about the same item type twice
@@ -208,7 +234,10 @@ class App:
 
         print("")
 
-        return add_dictionaries(self.already_has_items, items_dict)
+        return delete_zero_values(
+            add_dictionaries(
+                self.already_has_items,
+                items_dict))
 
     # Prints the user items
     def print_user_items(self):
@@ -222,9 +251,24 @@ class App:
         else:
             print("No items required!")
 
+    # Loads the recipes from the current pack
+    def load_recipes(self):
+        for item_type, config in self.pack.items():
+            # Depth is how many crafting recipes are required to reach the
+            # deepest point of the recipe
+            config["depth"] = get_depth(config["items"], self.pack)
+
+            # Produces default value
+            if "produces" not in config:
+                config["produces"] = 1
+
+    # Calculates the costs of items
+    def calculate_costs(self, items: Dict[str, int]):
+        pass
+
     # Runs the app
     def init(self):
-        self.get_user_items()
+        self.user_items = self.get_user_items()
 
         if app.use_already_has_items:
             # Gets items the user already has by using the list the user has
@@ -235,6 +279,8 @@ class App:
             # Subtracts items the user already has from the original items
             self.user_items, self.already_has_items = subtract_dictionaries(
                 self.user_items, self.already_has_items)
+
+        self.load_recipes()
 
         app.print_user_items()
 

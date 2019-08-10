@@ -1,0 +1,9 @@
+# Format
+# item name:
+#   produces: amount item produces (default 1)
+#
+#  items:
+#    - list
+#    - of
+#    - items
+#    - used
