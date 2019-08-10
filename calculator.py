@@ -155,6 +155,9 @@ class App:
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
 
+        # Items already asked about
+        self.items_asked_about: List[str] = []
+
     # Loads a YAML config file
     def load_config_file(self, path: str) -> Dict:
         with open(path, "r") as file:
@@ -212,14 +215,19 @@ class App:
         return user_items
 
     # Gets items that the user already has
-    def get_already_has_items(self, item_types: List[str]) -> Dict[str, int]:
+    def get_already_has_items(self,
+                              item_types: List[str],
+                              first_items: bool = True,
+                              last_items: bool = True) -> Dict[str,
+                                                               int]:
         items_dict: Dict[str, int] = {}
 
-        print("Enter items you already have:\n")
+        if first_items:
+            print("Enter items you already have:\n")
 
         for item_type in item_types:
             # It does not want to ask about the same item type twice
-            if item_type not in self.already_has_items.keys():
+            if item_type not in self.already_has_items and item_type not in self.items_asked_about:
                 try:
                     amount = int(input("How many {}? ".format(item_type)))
 
@@ -232,7 +240,10 @@ class App:
 
                 items_dict[item_type] = amount
 
-        print("")
+                self.items_asked_about.append(item_type)
+
+        if last_items:
+            print("")
 
         return delete_zero_values(
             add_dictionaries(
@@ -262,6 +273,10 @@ class App:
             if "produces" not in config:
                 config["produces"] = 1
 
+            # Makes the items config easier to use
+            config["parsed_items"] = [Stack(" ".join(item.split(" ")[1:]), int(
+                item.split(" ")[0])) for item in config["items"]]
+
     # Gets the maximum depth in a list of items
     def get_max_depth(self, items: Dict[str, int]) -> int:
         max_depth = 0
@@ -274,13 +289,59 @@ class App:
 
         return max_depth
 
+    # Returns a dictionary where lists of items are mapped to depths
+    def form_depth_dictionary(
+            self, items: Dict[str, int]) -> Dict[int, List[Stack]]:
+        dct: defaultdict = defaultdict(list)
+
+        for item_type, amount in items.items():
+            depth = 0
+
+            if item_type in self.pack:
+                depth = self.pack[item_type]["depth"]
+
+            dct[depth].append(Stack(item_type, amount))
+
+        return dct
 
     # Calculates the costs of items
     def calculate_costs(self, items: Dict[str, int]) -> Dict[str, int]:
         max_depth = self.get_max_depth(items)
 
+        # No items are craftable, so it returns instantly
         if max_depth == 0:
             return items
+        else:
+            while self.get_max_depth(items) > 0:
+                depth_dictionary = self.form_depth_dictionary(items)
+
+                # Processes items that have the deepest recipes
+                for item in depth_dictionary[max_depth]:
+                    if item.item_type in self.pack:
+                        for sub_item in self.pack[item.item_type]["parsed_items"]:
+                            if sub_item.item_type in self.pack:
+                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(sub_item.item_type, sub_item.amount * item.amount))
+                            else:
+                                depth_dictionary[0].append(Stack(sub_item.item_type, sub_item.amount * item.amount))
+                    else:
+                        depth_dictionary[0].append(Stack(item.item_type, item.amount))
+
+                del depth_dictionary[max_depth]
+
+                new_items = defaultdict(int)
+
+                # Resets the items dictionary
+                for _, depth_items in depth_dictionary.items():
+                    for item in depth_items:
+                        new_items[item.item_type] += item.amount
+
+                if self.use_already_has_items:
+                    self.already_has_items = app.get_already_has_items(
+                        [item_type for item_type, _ in new_items.items()], first_items=False, last_items=False)
+
+                    new_items, self.already_has_items = subtract_dictionaries(new_items, self.already_has_items)
+
+                return self.calculate_costs(new_items)
 
         return {}
 
@@ -288,11 +349,11 @@ class App:
     def init(self):
         self.user_items = self.get_user_items()
 
-        if app.use_already_has_items:
+        if self.use_already_has_items:
             # Gets items the user already has by using the list the user has
             # provided
-            self.already_has_items = app.get_already_has_items(
-                [item_type for item_type, _ in self.user_items.items()])
+            self.already_has_items = self.get_already_has_items(
+                [item_type for item_type, _ in self.user_items.items()], last_items=False)
 
             # Subtracts items the user already has from the original items
             self.user_items, self.already_has_items = subtract_dictionaries(
@@ -302,7 +363,9 @@ class App:
 
         self.user_items = self.calculate_costs(self.user_items)
 
-        app.print_user_items()
+        print("")
+
+        self.print_user_items()
 
 
 # Start the program
