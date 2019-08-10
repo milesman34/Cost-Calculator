@@ -109,6 +109,9 @@ class App:
     def __init__(self, path: str) -> None:
         self.config = self.load_config_file(path)
 
+        # Gets the pack listed in the config
+        self.pack = self.load_config_file(self.config["current_pack"])
+
         self.stop_commands = self.config["stop_commands"]
         self.use_already_has_items = self.config["use_already_has_items"]
 

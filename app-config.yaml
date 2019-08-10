@@ -1,9 +1,13 @@
-#Commands that tell the app to stop accepting input and switch to the next phase
-#Default: "-r", "--run"
+# Commands that tell the app to stop accepting input and switch to the next phase
+# Default: "-r", "--run"
 stop_commands:
   - "-r"
   - "--run"
 
-#Should the cost calculator get items the player already has?
-#Default: true
+# Should the cost calculator get items the player already has?
+# Default: true
 use_already_has_items: true
+
+#Current pack to use
+# Default: "packs/default.yaml"
+current_pack: "packs/default.yaml"
