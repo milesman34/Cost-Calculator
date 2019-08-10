@@ -326,8 +326,12 @@ class App:
                     if item.item_type in self.pack:
                         for sub_item in self.pack[item.item_type]["parsed_items"]:
                             if sub_item.item_type in self.pack:
-                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
-                                    sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
+                                if self.pack[item.item_type]["produces"] > 1:
+                                    depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                        sub_item.item_type, get_cost(item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
+                                else:
+                                    depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                        sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
                             else:
                                 depth_dictionary[0].append(Stack(sub_item.item_type, get_cost(
                                     item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
@@ -338,8 +342,6 @@ class App:
                 del depth_dictionary[max_depth]
 
                 new_items: Dict = defaultdict(int)
-
-                print(items)
 
                 # Resets the items dictionary
                 for _, depth_items in depth_dictionary.items():
@@ -352,8 +354,6 @@ class App:
 
                     new_items, self.already_has_items = subtract_dictionaries(
                         new_items, self.already_has_items)
-
-                print(new_items)
 
                 return self.calculate_costs(new_items)
 

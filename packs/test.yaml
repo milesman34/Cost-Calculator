@@ -40,6 +40,13 @@ paper:
   items:
     - "3 sugar cane"
 
+rail:
+  produces: 16
+
+  items:
+    - "6 iron ingot"
+    - "1 stick"
+
 stick:
   produces: 4
 
