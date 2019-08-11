@@ -1,5 +1,7 @@
 Cost-Calculator is a command-line program for Python 3 that calculates the costs of items in video games. It is designed around Minecraft.
 
+You must have python3 (3.7 recommended) and pyyaml installed for this to work.
+
 # Usage
 
 When using, make sure to separate your inputs with spaces. They should be in the format `amount item_type`, where `amount` is an `int` and `item_type` is a `str`. The amount should also not be a negative number or a decimal.
@@ -15,3 +17,4 @@ stop_commands: str[]
 use_already_has_items: bool
 current_pack: str
 ```
+
