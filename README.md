@@ -6,15 +6,21 @@ You must have python3 (3.7 recommended) and pyyaml installed for this to work.
 
 When using, make sure to separate your inputs with spaces. They should be in the format `amount item_type`, where `amount` is an `int` and `item_type` is a `str`. The amount should also not be a negative number or a decimal.
 
+If `use_already_has_items` is enabled in the config, it will ask the user how much of relevant materials they have. This is used to figure out how many items they actually need to get or produce.
+
+After everything is inputted, the program will output what materials you need to collect in order to craft the items listed.
+
 # Config Format
 
 Configs are written in YAML.
 
+Pack configs are used to define crafting recipes. `default.yaml` provides an example of such a config. Using this format will allow you to determine which crafting recipes you want to use. You can change the current pack with the configs, and also determine what commands can be used to stop getting items from the user.
+
 ## Application Config Format
 
 ```yaml
-stop_commands: str[]
-use_already_has_items: bool
-current_pack: str
+stop commands: str[]
+use already has items: bool
+current pack: str
 ```
 

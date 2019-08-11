@@ -1,2 +1,3 @@
 .mypy_cache/
 old/
+packs/quark-pack.yaml
