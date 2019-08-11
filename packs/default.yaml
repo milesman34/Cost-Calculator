@@ -7,22 +7,872 @@
 #    - of
 #    - items
 #    - used
+#
+# In this pack, liquids count as 1000 per MB. This is recommended.
+activator rail:
+  produces: 6
+
+  items:
+    - 6 iron ingot
+    - 1 redstone torch
+
+    - 2 stick
+anvil:
+  items:
+    - 3 iron block
+    - 4 iron ingot
+    
+armor stand:
+  items:
+    - 6 stick
+    - 1 stone slab
+
+arrow:
+  produces: 4
+
+  items:
+    - 1 feather
+    - 1 flint
+    - 1 stick
+    
+baked potato:
+  items:
+    - 1 potato
+    
+banner:
+  items:
+    - 1 stick
+    - 6 wool
+
+barrel:
+  items:
+    - 2 wood slab
+    - 6 wood planks
+
+beacon:
+  items:
+    - 5 glass
+    - 1 nether star
+    - 3 obsidian
+
+blast furnace:
+  items:
+    - 1 furnace
+    - 5 iron ingot
+    - 3 smooth stone
+
+blaze powder:
+  produces: 2
+
+  items:
+    - 1 blaze rod
+
+boat:
+  items:
+    - 5 wood planks
+    
+bonemeal:
+  produces: 3
+
+  items:
+    - 1 bone
+
+book:
+  items:
+    - 1 leather
+    - 3 paper
+
+bookshelf:
+  items:
+    - 3 book
+    - 6 wood planks
+    
+book and quill:
+  items:
+    - 1 book
+    - 1 feather
+    - 1 ink sac
+
+bow:
+  items:
+    - 3 stick
+    - 3 string
+    
+bowl:
+  produces: 4
+  
+  items:
+    - 3 wood planks
+    
+bread:
+  items:
+    - 3 wheat
+
+brewing stand:
+  items:
+    - 3 cobblestone
+    - 1 blaze rod
+
+brick:
+  items:
+    - 1 clay
+
+bricks:
+  items:
+    - 4 brick
+
+brick slab:
+  produces: 6
+
+  items:
+    - 3 bricks
+
+brick stairs:
+  produces: 4
+
+  items:
+    - 6 bricks
+
+brick wall:
+  produces: 6
+
+  items:
+    - 6 bricks
+
+bucket:
+  items:
+    - 3 iron ingot
+
+cake:
+  items:
+    - 1 egg
+    - 3 milk bucket
+    - 2 sugar
+    - 3 wheat
+    
+campfire:
+  items:
+    - 1 coal
+    - 3 stick
+    - 3 wood
+    
+carrot on a stick:
+  items:
+    - 1 carrot
+    - 1 fishing rod
+
+cartography table:
+  items:
+    - 2 paper
+    - 4 wood planks
+
+cauldron:
+  items:
+    - 7 iron ingot
+
 chest:
   items:
     - 8 wood planks
+    
+chest minecart:
+  items:
+    - 1 chest
+    - 1 minecart
+    
+clock:
+  items:
+    - 4 gold ingot
+    - 1 redstone
+
+cobblestone slab:
+  produces: 6
+
+  items:
+    - 3 cobblestone
+
+cobblestone stairs:
+  produces: 4
+
+  items:
+    - 6 cobblestone
+
+cobblestone wall:
+  produces: 6
+
+  items:
+    - 6 cobblestone
+    
+compass:
+  items:
+    - 4 iron ingot
+    - 1 redstone
+    
+composter:
+  items:
+    - 4 fence
+    - 3 wood planks
+    
+conduit:
+  items:
+    - 1 heart of the sea
+    - 8 nautilus shell
+    
+cooked chicken:
+  items:
+    - 1 raw chicken
+    
+cooked cod:
+  items:
+    - 1 raw cod
+    
+cooked mutton:
+  items:
+    - 1 raw mutton
+    
+cooked porkchop:
+  items:
+    - 1 raw porkchop
+    
+cooked rabbit:
+  items:
+    - 1 raw rabbit
+    
+cooked salmon:
+  items:
+    - 1 raw salmon
+    
+cookie:
+  produces: 8
+  
+  items:
+    - 2 wheat
+    - 1 cocoa beans
 
 crafting table:
   items:
     - 4 wood planks
+    
+crossbow:
+  items:
+    - 1 iron ingot
+    - 3 stick
+    - 2 string
+    - 1 tripwire hook
+    
+cyan dye:
+  produces: 2
+  
+  items:
+    - 1 lapis lazuli
+    - 1 green dye
+
+daylight detector:
+  items:
+    - 3 glass
+    - 3 nether quartz
+    - 3 wood slab
+
+detector rail:
+  produces: 6
+
+  items:
+    - 6 iron ingot
+    - 1 redstone
+    - 1 stone pressure plate
+
+diamond axe:
+  items:
+    - 3 diamond
+    - 2 stick
+
+diamond block:
+  items:
+    - 9 diamond
+
+diamond boots:
+  items:
+    - 4 diamond
+
+diamond chestplate:
+  items:
+    - 8 diamond
+
+diamond helmet:
+  items:
+    - 5 diamond
+
+diamond hoe:
+  items:
+    - 2 diamond
+    - 2 stick
+
+diamond leggings:
+  items:
+    - 7 diamond
+
+diamond pickaxe:
+  items:
+    - 3 diamond
+    - 2 stick
+
+diamond shovel:
+  items:
+    - 1 diamond
+    - 2 stick
+
+diamond sword:
+  items:
+    - 2 diamond
+    - 1 stick
+
+dispenser:
+  items:
+    - 1 bow
+    - 7 cobblestone
+    - 1 redstone
+
+dropper:
+  items:
+    - 7 cobblestone
+    - 1 redstone
+    
+empty map:
+  items:
+    - 1 compass
+    - 8 paper
+
+enchanting table:
+  items:
+    - 1 book
+    - 2 diamond
+    - 4 obsidian
+
+ender chest:
+  items:
+    - 1 ender eye
+    - 8 obsidian
+    
+ender crystal:
+  items:
+    - 1 ender eye
+    - 1 ghast tear
+    - 7 glass
+
+ender eye:
+  items:
+    - 1 blaze powder
+    - 1 ender pearl
+
+fence:
+  produces: 3
+
+  items:
+    - 2 stick
+    - 4 wood planks
+
+fence gate:
+  items:
+    - 4 stick
+    - 2 wood planks
+    
+fermented spider eye:
+  items:
+    - 1 brown mushroom
+    - 1 spider eye
+    - 1 sugar
+    
+fishing rod:
+  items:
+    - 3 stick
+    - 2 string
+
+fletching table:
+  items:
+    - 2 flint
+    - 4 wood planks
+    
+flint and steel:
+  items:
+    - 1 flint
+    - 1 iron ingot
+    
+flower pot:
+  items:
+    - 3 brick
 
 furnace:
   items:
     - 8 cobblestone
+    
+furnace minecart:
+  items:
+    - 1 furnace
+    - 1 minecart
+
+glass:
+  items:
+    - 1 sand
+    
+glass bottle:
+  produces: 3
+
+  items:
+    - 3 glass
+    
+glass pane:
+  produces: 16
+  
+  items:
+    - 6 glass
+    
+glistering melon:
+  items:
+    - 8 gold nugget
+    - 1 melon
+
+glowstone block:
+  items:
+    - 4 glowstone
+    
+gold apple:
+  items:
+    - 1 apple
+    - 8 gold ingot
+
+gold axe:
+  items:
+    - 3 gold ingot
+    - 2 stick
+
+gold boots:
+  items:
+    - 4 gold ingot
+
+gold chestplate:
+  items:
+    - 8 gold ingot
+
+gold helmet:
+  items:
+    - 5 gold ingot
+
+gold hoe:
+  items:
+    - 2 gold ingot
+    - 2 stick
+
+gold leggings:
+  items:
+    - 7 gold ingot
+    
+gold nugget:
+  produces: 9
+  
+  items:
+    - 1 gold ingot
+
+gold pickaxe:
+  items:
+    - 3 gold ingot
+    - 2 stick
+
+gold pressure plate:
+  items:
+    - 2 gold ingot
+
+gold shovel:
+  items:
+    - 1 gold ingot
+    - 2 stick
+
+gold sword:
+  items:
+    - 2 gold ingot
+    - 1 stick
+    
+gray dye:
+  produces: 2
+
+  items:
+    - 1 bonemeal
+    - 1 ink sac
+    
+green dye:
+  items:
+    - 1 cactus
+
+grindstone:
+  items:
+    - 2 stick
+    - 1 stone slab
+    - 2 wood planks
+
+hopper:
+  items:
+    - 1 chest
+    - 5 iron ingot
+    
+hopper minecart:
+  items:
+    - 1 hopper
+    - 1 minecart
+
+iron axe:
+  items:
+    - 3 iron ingot
+    - 2 stick
+    
+iron bars:
+  produces: 16
+  
+  items:
+    - 6 iron ingot
+
+iron boots:
+  items:
+    - 4 iron ingot
+
+iron chestplate:
+  items:
+    - 8 iron ingot
+
+iron door:
+  produces: 3
+
+  items:
+    - 6 iron ingot
+
+iron helmet:
+  items:
+    - 5 iron ingot
+
+iron hoe:
+  items:
+    - 2 iron ingot
+    - 2 stick
+
+iron leggings:
+  items:
+    - 7 iron ingot
+
+iron nugget:
+  produces: 9
+
+  items:
+    - 1 iron ingot
+
+iron pickaxe:
+  items:
+    - 3 iron ingot
+    - 2 stick
+
+iron pressure plate:
+  items:
+    - 2 iron ingot
+
+iron shovel:
+  items:
+    - 1 iron ingot
+    - 2 stick
+
+iron sword:
+  items:
+    - 2 iron ingot
+    - 1 stick
+
+iron trapdoor:
+  items:
+    - 4 iron ingot
 
 item frame:
   items:
     - 1 leather
     - 8 stick
+
+jukebox:
+  items:
+    - 1 diamond
+    - 8 wood planks
+    
+ladder:
+  produces: 3
+  
+  items:
+    - 7 stick
+
+lantern:
+  items:
+    - 8 iron nugget
+    - 1 torch
+    
+lava bucket:
+  items:
+    - 1 bucket
+    - 1000 lava
+
+leather boots:
+  items:
+    - 4 leather
+
+leather chestplate:
+  items:
+    - 8 leather
+
+leather helmet:
+  items:
+    - 5 leather
+
+leather leggings:
+  items:
+    - 7 leather
+
+lectern:
+  items:
+    - 1 bookshelf
+    - 4 wood slab
+
+lever:
+  items:
+    - 1 cobblestone
+    - 1 stick
+    
+light blue dye:
+  produces: 2
+  
+  items:
+    - 1 bonemeal
+    - 1 lapis lazuli
+    
+light gray dye:
+  produces: 2
+  
+  items:
+    - 1 bonemeal
+    - 1 gray dye
+    
+lime dye:
+  produces: 2
+  
+  items:
+    - 1 bonemeal
+    - 1 green dye
+
+loom:
+  items:
+    - 2 string
+    - 2 wood planks
+    
+magenta dye:
+  produces: 2
+  
+  items:
+    - 1 pink dye
+    - 1 purple dye
+    
+melon seeds:
+  items:
+    - 1 melon
+
+milk bucket:
+  items:
+    - 1 bucket
+    - 1000 milk
+
+minecart:
+  items:
+    - 5 iron ingot
+    
+mushroom stew:
+  items:
+    - 1 bowl
+    - 1 brown mushroom
+    - 1 red mushroom
+
+nether brick:
+  items:
+    - 1 netherrack
+    
+nether bricks:
+  items:
+    - 4 nether brick
+
+nether brick fence:
+  produces: 6
+
+  items:
+    - 2 nether brick
+    - 4 nether bricks
+    
+nether brick slab:
+  produces: 6
+  
+  items:
+    - 3 nether bricks
+    
+nether brick stairs:
+  produces: 4
+  
+  items:
+    - 6 nether bricks
+    
+nether brick wall:
+  produces: 6
+  
+  items:
+    - 6 nether bricks
+
+note block:
+  items:
+    - 1 redstone
+    - 8 wood planks
+
+observer:
+  items:
+    - 6 cobblestone
+    - 1 nether quartz
+    - 2 redstone
+    
+orange dye:
+  produces: 2
+
+  items:
+    - 1 red dye
+    - 1 yellow dye
+    
+painting:
+  items:
+    - 8 stick
+    - 1 wool
+
+paper:
+  produces: 3
+
+  items:
+    - 3 sugar cane
+    
+pink dye:
+  produces: 2
+  
+  items:
+    - 1 bonemeal
+    - 1 red dye
+
+piston:
+  items:
+    - 4 cobblestone
+    - 1 iron ingot
+    - 1 redstone
+    - 3 wood planks
+
+powered rail:
+  produces: 6
+
+  items:
+    - 6 gold ingot
+    - 1 redstone
+    - 1 stick
+    
+prismarine:
+  items:
+    - 4 prismarine shard
+    
+pumpkin pie:
+  items:
+    - 1 egg
+    - 1 pumpkin
+    - 1 sugar cane
+    
+pumpkin seeds:
+  produces: 4
+  
+  items:
+    - 1 pumpkin
+    
+purple dye:
+  produces: 2
+  
+  items:
+    - 1 lapis lazuli
+    - 1 red dye
+
+rail:
+  produces: 16
+
+  items:
+    - 6 iron ingot
+    - 1 stick
+
+redstone comparator:
+  items:
+    - 1 nether quartz
+    - 3 redstone torch
+    - 3 stone
+
+redstone lamp:
+  items:
+    - 1 glowstone block
+    - 4 redstone
+
+redstone repeater:
+  items:
+    - 1 redstone
+    - 2 redstone torch
+    - 3 stone
+
+redstone torch:
+  items:
+    - 1 redstone
+    - 1 stick
+    
+red dye:
+  items:
+    - 1 poppy
+
+sandstone:
+  items:
+    - 4 sand
+
+sandstone slab:
+  produces: 6
+
+  items:
+    - 3 sandstone
+
+sandstone stairs:
+  produces: 4
+
+  items:
+    - 6 sandstone
+
+sandstone wall:
+  produces: 6
+
+  items:
+    - 6 sandstone
+
+scaffolding:
+  items:
+    - 6 bamboo
+    - 1 string
+    
+sea lantern:
+  items:
+    - 5 prismarine crystals
+    - 4 prismarine shard
+
+shears:
+  items:
+    - 2 iron ingot
+
+shield:
+  items:
+    - 1 iron ingot
+    - 6 wood planks
+
+shulker box:
+  items:
+    - 1 chest
+    - 2 shulker shell
 
 sign:
   produces: 3
@@ -30,6 +880,28 @@ sign:
   items:
     - 1 stick
     - 6 wood planks
+    
+slime block:
+  items:
+    - 9 slimeball
+
+smithing table:
+  items:
+    - 2 iron ingot
+    - 4 wood planks
+
+smoker:
+  items:
+    - 1 furnace
+    - 4 wood
+
+smooth stone:
+  items:
+    - 1 stone
+    
+steak:
+  items:
+    - 1 raw beef
 
 stick:
   produces: 4
@@ -37,10 +909,151 @@ stick:
   items:
     - 2 wood planks
 
+sticky piston:
+  items:
+    - 1 piston
+    - 1 slimeball
+
+stone:
+  items:
+    - 1 cobblestone
+
+stonecutter:
+  items:
+    - 1 iron ingot
+    - 3 stone
+
+stone axe:
+  items:
+    - 3 cobblestone
+    - 2 stick
+
+stone bricks:
+  produces: 4
+
+  items:
+    - 4 stone
+
+stone brick slab:
+  produces: 6
+
+  items:
+    - 3 stone bricks
+
+stone brick stairs:
+  produces: 4
+
+  items:
+    - 6 stone bricks
+
+stone brick wall:
+  produces: 6
+
+  items:
+    - 6 stone bricks
+
+stone button:
+  items:
+    - 1 stone
+
+stone hoe:
+  items:
+    - 2 cobblestone
+    - 2 stick
+
+stone pickaxe:
+  items:
+    - 3 cobblestone
+    - 2 stick
+
+stone pressure plate:
+  items:
+    - 2 stone
+
+stone shovel:
+  items:
+    - 1 cobblestone
+    - 2 stick
+
+stone slab:
+  produces: 6
+
+  items:
+    - 3 stone
+    
+stone stairs:
+  produces: 4
+  
+  items:
+    - 6 stone
+
+stone sword:
+  items:
+    - 2 cobblestone
+    - 1 stick
+
+sugar:
+  items:
+    - 1 sugar cane
+
+tnt:
+  items:
+    - 5 gunpowder
+    - 4 sand
+    
+tnt minecart:
+  items:
+    - 1 minecart
+    - 1 tnt
+
+torch:
+  produces: 4
+
+  items:
+    - 1 coal
+    - 1 stick
+
+trapped chest:
+  items:
+    - 1 chest
+    - 1 tripwire hook
+
+tripwire hook:
+  produces: 2
+
+  items:
+    - 1 iron ingot
+    - 1 stick
+    - 1 wood planks
+
+turtle shell:
+  items:
+    - 5 scute
+    
+water bucket:
+  items:
+    - 1 bucket
+    - 1000 water
+
+white bed:
+  items:
+    - 3 wood planks
+    - 3 wool
+
 wood axe:
   items:
     - 2 stick
     - 3 wood planks
+
+wood button:
+  items:
+    - 1 wood planks
+
+wood door:
+  produces: 3
+
+  items:
+    - 6 wood planks
 
 wood hoe:
   items:
@@ -52,12 +1065,38 @@ wood pickaxe:
     - 2 stick
     - 3 wood planks
 
+wood pressure plate:
+  items:
+    - 2 wood planks
+
 wood shovel:
   items:
     - 2 stick
     - 1 wood planks
 
+wood slab:
+  produces: 6
+
+  items:
+    - 3 wood planks
+
+wood stairs:
+  produces: 4
+
+  items:
+    - 6 wood planks
+
 wood sword:
   items:
     - 1 stick
     - 2 wood planks
+
+wood trapdoor:
+  produces: 2
+
+  items:
+    - 6 wood planks
+    
+yellow dye:
+  items:
+    - 1 dandelion

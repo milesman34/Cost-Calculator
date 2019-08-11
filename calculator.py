@@ -334,7 +334,8 @@ class App:
                         if sub_item.item_type in self.pack:
                             # This code is very bad, but it works
                             # If the recipe produces multiple instances of an item, then it uses a different ordering of arguments
-                            # It probably shouldn't work, but it gives the correct results
+                            # It probably shouldn't work, but it gives the
+                            # correct results
                             if self.pack[item.item_type]["produces"] > 1:
                                 depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
                                     sub_item.item_type, get_cost(item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
