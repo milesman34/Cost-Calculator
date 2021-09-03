@@ -8,6 +8,10 @@ stop commands:
 # Default: true
 use already has items: true
 
-#Current pack to use
+# Current pack to use
 # Default: "packs/default.yaml"
-current pack: "packs/quark-pack.yaml"
+current pack: packs/dj2.yaml
+
+# Skip asking for resources the player already has?
+# Default: false
+skip resources: true

@@ -17,6 +17,13 @@ def delete_zero_values(dict: Dict[Any, int]) -> Dict[Any, int]:
     return {key: value for key, value in dict.items() if value != 0}
 
 
+# Parses number to formatted string
+def to_formatted_string(num: int) -> str:
+    powers = int(math.log10(num))
+
+    return str(num) if num < 1e4 else f"{round(num / (10 ** powers), 2)}e{powers}"
+
+
 # Subtracts 2 dictionaries from each other, using one that will be
 # subtracted from and one that subtracts
 def subtract_dictionaries(
@@ -95,25 +102,36 @@ def split_input(input: str) -> Tuple[int, str]:
         return amount, item_type
 
 
+# Master depth dictionary, should make the code way more efficient
+master_depth_dictionary = {}
+
+
 # Gets the depth of a recipe
-def get_depth(items: List[str], pack: Dict[str, Dict]) -> int:
-    # The maximum depth will automatically be the final depth
-    current_max_depth = 0
+def get_depth(item_type2: str, items: List[str], pack: Dict[str, Dict]) -> int:
+    if item_type2 in master_depth_dictionary:
+        return master_depth_dictionary[item_type2]
 
-    for item in items:
-        depth = 1
+    try:
+        # The maximum depth will automatically be the final depth
+        current_max_depth = 0
 
-        amount, item_type = split_input(item)
+        for item in items:
+            depth = 1
 
-        if item_type in pack:
-            # The depth goes up for each layer
-            depth += get_depth(pack[item_type]["items"], pack)
+            amount, item_type = split_input(item)
 
-        # Updates the current maximum if needed
-        if depth > current_max_depth:
-            current_max_depth = depth
+            if item_type in pack:
+                # The depth goes up for each layer
+                depth += get_depth(item_type, pack[item_type]["items"], pack)
 
-    return current_max_depth
+            # Updates the current maximum if needed
+            if depth > current_max_depth:
+                current_max_depth = depth
+
+        master_depth_dictionary[item_type2] = current_max_depth
+        return current_max_depth
+    except:
+        print("Error with item " + item_type)
 
 
 # Gets the cost of one item
@@ -143,7 +161,7 @@ class Stack:
         self.amount = amount
 
     def __repr__(self) -> str:
-        return "{} {}".format(self.amount, self.item_type)
+        return "{} {}".format(to_formatted_string(self.amount), self.item_type)
 
 
 # Represents the cost-calculator app
@@ -157,9 +175,15 @@ class App:
         self.stop_commands = self.config["stop commands"]
         self.use_already_has_items = self.config["use already has items"]
 
+        self.skip_resources = self.config["skip resources"]
+
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
+
+        # Items that have been evaluated
+        # First one is amount, second is depth
+        self.evaluated_items: Dict[str, List[int]] = {}
 
         # Items already asked about
         self.items_asked_about: List[str] = []
@@ -228,30 +252,35 @@ class App:
                                                                int]:
         items_dict: Dict[str, int] = {}
 
-        if first_items:
+        if first_items and not self.skip_resources:
             print("Enter items you already have:\n")
 
         for item_type in item_types:
             # It does not want to ask about the same item type twice
             if item_type not in self.already_has_items and item_type not in self.items_asked_about:
                 try:
-                    string_amount = input("How many {}? ".format(item_type))
+                    if not self.skip_resources:
+                        string_amount = input("How many {}? ".format(item_type))
 
-                    if string_amount != "":
-                        amount = int(string_amount)
+                        if string_amount != "":
+                            amount = int(string_amount)
 
-                        if amount < 0:
-                            raise ValueError
-                    else:
-                        amount = 0
+                            if amount < 0:
+                                raise ValueError
+                        else:
+                            amount = 0
                 except ValueError:
                     print("You must input a positive integer!")
 
                     sys.exit()
 
-                items_dict[item_type] = amount
+                if not self.skip_resources:
+                    items_dict[item_type] = amount
 
                 self.items_asked_about.append(item_type)
+
+                if self.skip_resources:
+                    items_dict[item_type] = 0
 
         if last_items:
             print("")
@@ -269,16 +298,22 @@ class App:
         # Prints the items needed for the recipe
         if len(stack_items) > 0:
             for item in sort_stack_list(stack_items):
-                print(item)
+                start_text = ("  " * self.max_depth()) + "  " if self.max_depth() > 0 else ""
+
+                print(start_text + str(item))
         else:
             print("No items required!")
 
     # Loads the recipes from the current pack
+    # THIS IS DEFINITELY CAUSING THE LAG
     def load_recipes(self):
+        # for item, config in self.pack.items():
+        #     print(item, ": ", config)
+
         for item_type, config in self.pack.items():
             # Depth is how many crafting recipes are required to reach the
             # deepest point of the recipe
-            config["depth"] = get_depth(config["items"], self.pack)
+            config["depth"] = get_depth(item_type, config["items"], self.pack)
 
             # Produces default value
             if "produces" not in config:
@@ -336,11 +371,18 @@ class App:
                             # If the recipe produces multiple instances of an item, then it uses a different ordering of arguments
                             # It probably shouldn't work, but it gives the
                             # correct results
+                            depth = self.pack[sub_item.item_type]["depth"]
+                            
+                            if sub_item.item_type not in self.evaluated_items:
+                                self.evaluated_items[sub_item.item_type] = [0, depth]
+
+                            self.evaluated_items[sub_item.item_type][0] += math.ceil(sub_item.amount * item.amount / self.pack[item.item_type]["produces"])
+
                             if self.pack[item.item_type]["produces"] > 1:
-                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                depth_dictionary[depth].append(Stack(
                                     sub_item.item_type, get_cost(item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
                             else:
-                                depth_dictionary[self.pack[sub_item.item_type]["depth"]].append(Stack(
+                                depth_dictionary[depth].append(Stack(
                                     sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
                         else:
                             depth_dictionary[0].append(Stack(sub_item.item_type, get_cost(
@@ -370,6 +412,10 @@ class App:
 
         return {}
 
+    # Returns the maximum depth
+    def max_depth(self):
+        return max([i[1][1] for i in self.evaluated_items.items()]) if len(self.evaluated_items) > 0 else 0
+
     # Runs the app
     def init(self):
         self.user_items = self.get_user_items()
@@ -389,6 +435,11 @@ class App:
         self.user_items = self.calculate_costs(self.user_items)
 
         print("")
+
+        max_depth = self.max_depth()
+
+        for item, stats in sorted(self.evaluated_items.items(), key=lambda e: (e[1][1], e[1][0]), reverse=True):
+            print(("  " * (max_depth - stats[1] + 1)) + "to craft: " + f"{to_formatted_string(stats[0])} {item}")
 
         self.print_user_items()
 
