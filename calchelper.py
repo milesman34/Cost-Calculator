@@ -13,8 +13,24 @@ def parse_text(text):
 
 # Loads a YAML config file
 def load_config_file(path: str):
+    # Creates file if it does not exist
+    if not os.path.exists(path):
+        open(path, "w+")
+
     with open(path, "r+") as file:
         return yaml.safe_load(file)
+
+# Tries to print the items without recipes
+def print_without_recipes(inputs):
+    print("")
+
+    if app_config["print items without recipes"]:
+        unique_items = list(set([i for i in inputs]))
+        
+        print(f"Missing: {[i for i in unique_items if i not in pack]}")
+
+# Determines if it should print items the pack does not have recipes for
+app_config = load_config_file("app-config.yaml")
 
 # This script provides a wrapper around the program for easy editing and use
 os.system("clear")
@@ -77,9 +93,13 @@ while True:
         entry = " ".join(output.split(" ")[1:])
 
         if entry in pack:
-            print(f"Entry {entry} found!\n")
-            print(pack[entry])
-            print("")
+            try:
+                print(f"Entry {entry} found!\n")
+                print(pack[entry]["items"])
+                print_without_recipes(parse_text(i)[1] for i in pack[entry]["items"])
+                print("")
+            except:
+                pass
         else:
             print(f"Entry {entry} not found!\n")
 
@@ -95,6 +115,9 @@ while True:
 
     # Gets all of the inputs into the parsed form
     parsed_inputs = [parse_text(i) for i in split_inputs]
+
+    # Prints the items that don't have recipes
+    print_without_recipes([i[1] for i in parsed_inputs])
 
     # Converts the parsed inputs into the versions used in the file
     file_inputs = [f"{i[0]} {i[1]}" for i in parsed_inputs]

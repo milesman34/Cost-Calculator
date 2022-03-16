@@ -1,4 +1,6 @@
+import functools
 import math
+import os
 import re
 import sys
 import yaml
@@ -21,7 +23,7 @@ def delete_zero_values(dict: Dict[Any, int]) -> Dict[Any, int]:
 def to_formatted_string(num: int) -> str:
     powers = int(math.log10(num))
 
-    return str(num) if num < 1e4 else f"{round(num / (10 ** powers), 2)}e{powers}"
+    return str(num) if num < 1e6 else f"{num} ({round(num / (10 ** powers), 2)}e{powers})"
 
 
 # Subtracts 2 dictionaries from each other, using one that will be
@@ -167,11 +169,19 @@ class Stack:
 # Represents the cost-calculator app
 class App:
     def __init__(self, path: str) -> None:
+        os.system("clear")
+
         self.config = self.load_config_file(path)
 
         # Gets the pack listed in the config
         self.pack = self.load_config_file(self.config["current pack"])
 
+        # Gets the list of addons
+        self.addons = [self.load_config_file(addon) for addon in self.config["addons"]]
+
+        self.pack = functools.reduce(lambda a, b: {**a, **b}, self.addons, self.pack)
+
+        # Gets other config options
         self.stop_commands = self.config["stop commands"]
         self.use_already_has_items = self.config["use already has items"]
 
@@ -305,7 +315,6 @@ class App:
             print("No items required!")
 
     # Loads the recipes from the current pack
-    # THIS IS DEFINITELY CAUSING THE LAG
     def load_recipes(self):
         # for item, config in self.pack.items():
         #     print(item, ": ", config)

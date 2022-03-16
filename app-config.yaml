@@ -10,8 +10,15 @@ use already has items: true
 
 # Current pack to use
 # Default: "packs/default.yaml"
-current pack: packs/dj2.yaml
+current pack: packs/techjourney.yaml
+
+addons: [
+]
 
 # Skip asking for resources the player already has?
-# Default: false
+# Default: true
 skip resources: true
+
+# Print items in calchelper that don't have recipes
+# Default: true
+print items without recipes: true
