@@ -2,7 +2,7 @@ import os, re, yaml
 
 # Parses an input, returning a tuple containing the amount and item type
 def parse_text(text):
-    text = text.lower()
+    text = text.lower().strip()
 
     amount = text.split(" ")[0]
 
@@ -71,7 +71,7 @@ if pack == None:
 
 while True:
     # Gets the item to be produced
-    output = input("output: ")
+    output = input("output: ").strip()
 
     # Breaks the loop if needed
     if output == "-r":

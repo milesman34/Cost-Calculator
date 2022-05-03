@@ -10,7 +10,7 @@ use already has items: true
 
 # Current pack to use
 # Default: "packs/default.yaml"
-current pack: packs/techjourney.yaml
+current pack: packs/gtnh.yaml
 
 addons: [
 ]
