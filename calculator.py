@@ -65,7 +65,7 @@ def add_dictionaries(target: Dict, adder: Dict) -> Dict:
 
 # Sorts a list of Stacks in descending order
 def sort_stack_list(ls: List["Stack"]) -> List["Stack"]:
-    return sorted(ls, key=lambda stack: stack.amount, reverse=True)
+    return sorted(sorted(ls, key=lambda stack2: stack2.item_type), key=lambda stack: stack.amount, reverse=True)
 
 
 # Converts a dictionary to a list of Stacks
@@ -447,11 +447,13 @@ class App:
 
         max_depth = self.max_depth()
 
-        for item, stats in sorted(self.evaluated_items.items(), key=lambda e: (e[1][1], e[1][0]), reverse=True):
+        # Two sorts are used since they have to be done in different orders
+        for item, stats in sorted(sorted(self.evaluated_items.items(), key=lambda f: f[0]), key=lambda e: (e[1][1], e[1][0]), reverse=True):
+            # print(item, stats)
             print(("  " * (max_depth - stats[1] + 1)) + "to craft: " + f"{to_formatted_string(stats[0])} {item}")
 
         self.print_user_items()
-
+    
 
 # Start the program
 if __name__ == "__main__":
