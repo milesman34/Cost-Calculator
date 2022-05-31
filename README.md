@@ -14,7 +14,7 @@ After everything is inputted, the program will output what materials you need to
 
 Configs are written in YAML.
 
-Pack configs are used to define crafting recipes. `default.yaml` provides an example of such a config. Using this format will allow you to determine which crafting recipes you want to use. You can change the current pack with the configs, and also determine what commands can be used to stop getting items from the user.
+Pack configs are used to define crafting recipes. `packs/example.yaml` provides an example of such a config. Using this format will allow you to determine which crafting recipes you want to use. You can change the current pack with the configs, and also determine what commands can be used to stop getting items from the user.
 
 ## Application Config Format
 
@@ -25,8 +25,26 @@ current pack: str
 ```
 
 # calchelper.py script
-Use this script to make encoding recipes. It will ask you for a file name. The file is located in the packs directory, but the script does not ask for the packs part. Example: if your pack file is in packs/dj2.yaml, use (dj2) for the query. The file must exist before you run this script.
+Use this script to make encoding recipes. It will ask you for a file name. The file is located in the packs directory, but the script does not ask for the packs part. Example: if your pack file is in packs/dj2.yaml, use (dj2) for the query. The script will create the new file automatically.
 
 It will ask you for the output item first. The number of items goes before the item name, and is optional (presumed to be 1).
 
 Then it will ask you for the input items, which are delimited by items.
+
+Example of use:
+
+```
+output: diamond
+inputs: 8 gold
+
+missing: ['gold']
+
+output: 3 emerald
+inputs: 4 diamond, 6 gold
+
+missing: ['gold]
+
+output: -r
+```
+
+You may also overwrite entries, delete them with the `delete` prefix (example: `delete gold`), and check the contents with the `check` prefix.

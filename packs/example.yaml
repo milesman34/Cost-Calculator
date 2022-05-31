@@ -1,0 +1,80 @@
+furnace:
+    items:
+        - 8 cobblestone
+
+iron furnace:
+    items:
+        - 2 furnace
+        - 7 iron
+
+gold furnace:
+    items:
+        - 2 iron furnace
+        - 7 gold
+
+diamond furnace:
+    items:
+        - 2 gold furnace
+        - 7 diamond
+
+emerald furnace:
+    items:
+        - 2 diamond furnace
+        - 7 emerald
+
+chest:
+    items:
+        - 8 planks
+
+drawer:
+    items:
+        - 6 planks
+        - 1 chest
+
+upgrade template:
+    produces: 2
+
+    items:
+        - 6 stick
+        - 1 drawer
+
+stick:
+    produces: 16
+
+    items:
+        - 2 log
+
+iron chest:
+    items:
+        - 2 chest
+        - 7 iron
+
+gold chest:
+    items:
+        - 2 iron chest
+        - 7 gold
+
+diamond chest:
+    items:
+        - 2 gold chest
+        - 7 diamond
+
+emerald chest:
+    items:
+        - 2 diamond chest
+        - 7 emerald
+
+emerald storage upgrade:
+    items:
+        - 1 upgrade template
+        - 4 emerald
+        - 2 stick
+        - 2 emerald chest
+
+crafting station:
+    items:
+        - 2 emerald chest
+        - 2 emerald furnace
+        - 9 diamond
+        - 4 iron furnace
+

@@ -2,6 +2,7 @@
 
 old/*
 packs/*
+!packs/example.yaml
 graphmaker.py
 index.html
 jquery.js
