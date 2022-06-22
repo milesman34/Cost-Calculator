@@ -114,7 +114,7 @@ while True:
     split_inputs = re.split(", *", inputs)
 
     # Gets all of the inputs into the parsed form
-    parsed_inputs = [parse_text(i) for i in split_inputs]
+    parsed_inputs = [i for i in [parse_text(i) for i in split_inputs] if i[1] != ""]
 
     # Prints the items that don't have recipes
     print_without_recipes([i[1] for i in parsed_inputs])
