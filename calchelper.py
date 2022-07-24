@@ -2,6 +2,8 @@ import os, re, yaml
 
 from typing import Set
 
+from functools import cache
+
 # Parses an input, returning a tuple containing the amount and item type
 def parse_text(text):
     text = text.lower().strip()
@@ -23,6 +25,7 @@ def load_config_file(path: str):
         return yaml.safe_load(file)
 
 # Gets the raw materials for a given item
+@cache
 def get_all_raw_materials(item):
     if item in pack:
         result = set()
@@ -49,10 +52,11 @@ def print_without_recipes(inputs):
         
         print(f"Missing: {[i for i in sorted(unique_items) if i not in pack]}")
 
+        # The raw materials to be displayed are not included in the missing elements
         if app_config["display all raw materials"]:
-            raw_materials = list(set(flatten(list(get_all_raw_materials(item)) for item in inputs)))
+            raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if i not in unique_items]
 
-            if len(raw_materials) != len(unique_items):
+            if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
 
 # Determines if it should print items the pack does not have recipes for
