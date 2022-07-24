@@ -1,5 +1,7 @@
 import os, re, yaml
 
+from typing import Set
+
 # Parses an input, returning a tuple containing the amount and item type
 def parse_text(text):
     text = text.lower().strip()
@@ -20,6 +22,24 @@ def load_config_file(path: str):
     with open(path, "r+") as file:
         return yaml.safe_load(file)
 
+# Gets the raw materials for a given item
+def get_all_raw_materials(item):
+    if item in pack:
+        result = set()
+
+        for component in pack[item]["items"]:
+            component_name = " ".join(component.split(" ")[1:])
+
+            result.update(get_all_raw_materials(component_name))
+
+        return result
+    else:
+        return set([item])
+
+# Flattens a list
+def flatten(xss):
+    return [x for xs in xss for x in xs]
+
 # Tries to print the items without recipes
 def print_without_recipes(inputs):
     print("")
@@ -27,7 +47,11 @@ def print_without_recipes(inputs):
     if app_config["print items without recipes"]:
         unique_items = list(set([i for i in inputs]))
         
-        print(f"Missing: {[i for i in unique_items if i not in pack]}")
+        print(f"Missing: {[i for i in sorted(unique_items) if i not in pack]}\n")
+
+        if app_config["display all raw materials"]:
+            raw_materials = list(set(flatten(list(get_all_raw_materials(item)) for item in inputs)))
+            print(f"Raw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
 
 # Determines if it should print items the pack does not have recipes for
 app_config = load_config_file("app-config.yaml")
@@ -73,10 +97,13 @@ while True:
     # Gets the item to be produced
     output = input("output: ").strip()
 
+    # Command to potentially use
+    command = output.split(" ")[0]
+
     # Breaks the loop if needed
     if output == "-r":
         break
-    elif output.split(" ")[0] == "delete":
+    elif command == "delete":
         # Deletes an entry
         entry = " ".join(output.split(" ")[1:])
 
@@ -88,7 +115,7 @@ while True:
             print(f"Entry {entry} not found!\n")
 
         continue
-    elif output.split(" ")[0] == "check":
+    elif command == "check":
         # Checks if an entry exists
         entry = " ".join(output.split(" ")[1:])
 
@@ -96,7 +123,7 @@ while True:
             try:
                 print(f"Entry {entry} found!\n")
                 print(pack[entry]["items"])
-                print_without_recipes(parse_text(i)[1] for i in pack[entry]["items"])
+                print_without_recipes([parse_text(i)[1] for i in pack[entry]["items"]])
                 print("")
             except:
                 pass
