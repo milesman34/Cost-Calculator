@@ -25,4 +25,4 @@ print items without recipes: true
 
 # Display all raw materials after using calchelper and/or using check
 # Default: false
-display all raw materials: false
+display all raw materials: true

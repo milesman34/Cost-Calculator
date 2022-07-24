@@ -47,11 +47,13 @@ def print_without_recipes(inputs):
     if app_config["print items without recipes"]:
         unique_items = list(set([i for i in inputs]))
         
-        print(f"Missing: {[i for i in sorted(unique_items) if i not in pack]}\n")
+        print(f"Missing: {[i for i in sorted(unique_items) if i not in pack]}")
 
         if app_config["display all raw materials"]:
             raw_materials = list(set(flatten(list(get_all_raw_materials(item)) for item in inputs)))
-            print(f"Raw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
+
+            if len(raw_materials) != len(unique_items):
+                print(f"\nRaw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
 
 # Determines if it should print items the pack does not have recipes for
 app_config = load_config_file("app-config.yaml")
@@ -152,7 +154,9 @@ while True:
     entry = {
         "produces": output[0],
         "items": file_inputs
-    } if output[0] != 1 else file_inputs
+    } if output[0] != 1 else {
+        "items": file_inputs
+    }
 
     # Overwrites the original entry
     pack[output[1]] = entry
