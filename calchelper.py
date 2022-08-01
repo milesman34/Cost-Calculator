@@ -26,7 +26,12 @@ def load_config_file(path: str):
 
 # Gets the raw materials for a given item
 @cache
-def get_all_raw_materials(item):
+def get_all_raw_materials(item, visited=set()):
+    if item in visited:
+        return set()
+    else:
+        visited.add(item)
+
     if item in pack:
         result = set()
 
