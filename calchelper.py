@@ -55,14 +55,28 @@ def print_without_recipes(inputs):
     if app_config["print items without recipes"]:
         unique_items = list(set([i for i in inputs]))
         
-        print(f"Missing: {[i for i in sorted(unique_items) if i not in pack]}")
+        print(f"Missing: {[i for i in sorted(unique_items) if not (i in pack or i in get_materials())]}")
 
         # The raw materials to be displayed are not included in the missing elements
         if app_config["display all raw materials"]:
-            raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if i not in unique_items]
+            raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if not (i in unique_items or i in get_materials())]
 
             if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
+
+# Gets the list of raw materials
+def get_materials():
+    materials = []
+
+    if "materials" in pack:
+        materials = pack["materials"]
+
+        if "items" in materials:
+            materials = materials["items"]
+        
+        return [" ".join(i.split(" ")[1:]) for i in materials]
+    else:
+        return []
 
 # Determines if it should print items the pack does not have recipes for
 app_config = load_config_file("app-config.yaml")
@@ -144,7 +158,7 @@ while True:
         continue
     elif command == "material":
         # Gets the material
-        material = " ".join(output.split(" ")[1:])
+        material = f"1 {' '.join(output.split(' ')[1:])}"
 
         if "materials" in pack:
             if "items" in pack["materials"]:
