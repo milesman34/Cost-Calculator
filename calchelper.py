@@ -142,6 +142,27 @@ while True:
             print(f"Entry {entry} not found!\n")
 
         continue
+    elif command == "material":
+        # Gets the material
+        material = " ".join(output.split(" ")[1:])
+
+        if "materials" in pack:
+            if "items" in pack["materials"]:
+                pack["materials"]["items"].append(material)
+            else:
+                pack["materials"].append(material)
+        else:   
+            pack["materials"] = [material]
+
+        print("")
+        continue
+    elif command == "materials":
+        # Checks the raw materials
+        entry = pack["materials"] if "materials" in pack else []
+        print("Materials:", entry["items"] if "items" in entry else entry)
+        print("")
+
+        continue
     else:
         output = parse_text(output)
 
