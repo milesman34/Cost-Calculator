@@ -156,7 +156,7 @@ while True:
             print(f"Entry {entry} not found!\n")
 
         continue
-    elif command == "material":
+    elif command == "raw_material":
         # Gets the material
         material = f"1 {' '.join(output.split(' ')[1:])}"
 
@@ -170,7 +170,7 @@ while True:
 
         print("")
         continue
-    elif command == "materials":
+    elif command == "raw_materials":
         # Checks the raw materials
         entry = pack["materials"] if "materials" in pack else []
         print("Materials:", entry["items"] if "items" in entry else entry)

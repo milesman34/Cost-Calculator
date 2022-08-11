@@ -49,4 +49,4 @@ output: -r
 
 You may also overwrite entries, delete them with the `delete` prefix (example: `delete gold`), and check the contents with the `check` prefix.
 
-You can use the `material` prefix to add a new raw material, and use `materials` to check the raw materials.
+You can use the `raw_material` prefix to add a new raw material, and use `raw_materials` to check the raw materials.
