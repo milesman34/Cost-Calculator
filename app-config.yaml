@@ -10,11 +10,7 @@ use already has items: true
 
 # Current pack to use
 # Default: "packs/default.yaml"
-<<<<<<< HEAD
-current pack: packs/stacia.yaml
-=======
 current pack: packs/gtnh.yaml
->>>>>>> rawmaterials
 
 addons: [
 ]
