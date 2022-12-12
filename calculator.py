@@ -501,16 +501,16 @@ class App:
 
         result = "<div>"
 
-        for item_name, item_amount in results.items():
+        for item_name, item_amount in sorted(sorted(sorted(list(results.items()), key=lambda n: n[0]), key=lambda n: n[1],  reverse=True), key=lambda n: n[0] in self.pack, reverse=True):
             inner_html = self.get_html(item_name, item_amount, depth + 1)
             self.html_id += 1
 
             new_element = "<div"
 
             if inner_html == "":
-                new_element += f">{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name}"
+                new_element += f">{'&nbsp;' * (depth + 1) * 4}{to_formatted_string(item_amount)} {item_name}"
             else:
-                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
+                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{'&nbsp;' * (depth + 1) * 4}{to_formatted_string(item_amount)} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
 
             result += new_element + "</div>"
 
