@@ -199,6 +199,9 @@ class App:
         # Items already asked about
         self.items_asked_about: List[str] = []
 
+        # Current html id
+        self.html_id = 0
+
     # Loads a YAML config file
     def load_config_file(self, path: str) -> Dict:
         with open(path, "r") as file:
@@ -426,9 +429,12 @@ class App:
     def max_depth(self):
         return max([i[1][1] for i in self.evaluated_items.items()]) if len(self.evaluated_items) > 0 else 0
 
-    # Returns the results as a data structure
-    def get_results(self):
-        self.user_items = self.calculate_costs(self.user_items)
+    # Returns the results as a data structure using a set of user items
+    def get_results(self, user_items: dict[str, int]) -> defaultdict[int, list[Stack]]:
+        # Copies the user items to a set of starting items
+        self.starting_items = user_items.copy()
+
+        self.user_items = self.calculate_costs(user_items)
 
         # Map depth of craft to item
         results = defaultdict(list)
@@ -451,21 +457,83 @@ class App:
         return results
 
     # Prints the results to the user
-    def print_results(self):
-        print("")
-
+    def print_results(self, results: defaultdict[int, list[Stack]]):
         max_depth = self.max_depth()
 
-        # Two sorts are used since they have to be done in different orders
-        for item, stats in sorted(sorted(self.evaluated_items.items(), key=lambda f: f[0]), key=lambda e: (e[1][1], e[1][0]), reverse=True):
-            # print(item, stats)
-            print(("  " * (max_depth - stats[1] + 1)) + "to craft: " + f"{to_formatted_string(stats[0])} {item}")
+        for depth, items in results.items():
+            if depth > 0:
+                for item in items:
+                    print(("  " * depth) + ("to craft: " + str(item) if depth <= max_depth else str(item)))
 
-        self.print_user_items()
+
+        # Two sorts are used since they have to be done in different orders
+        # for item, stats in sorted(sorted(self.evaluated_items.items(), key=lambda f: f[0]), key=lambda e: (e[1][1], e[1][0]), reverse=True):
+        #     # print(item, stats)
+        #     print(("  " * (max_depth - stats[1] + 1)) + "to craft: " + f"{to_formatted_string(stats[0])} {item}")
+
+        # self.print_user_items()
+
+    # Simplified cost calculation that only does one step (for html)
+    def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, int]:
+        if name not in self.pack:
+            return {}
+        else:
+            items = self.pack[name]["parsed_items"]
+            produces = self.pack[name]["produces"]
+
+            result = {}
+           
+            for item in items:
+                new_amount = item.amount * math.ceil(amount / produces)
+                result[item.item_type] = new_amount
+
+            return result
+
+    # Gets the html to display for an item
+    def get_html(self, name: str, amount: int, depth: int=0) -> str:
+        # check if item is uncraftable
+        if name not in self.pack:
+            return ""
+            
+        self.evaluated_items = {}
+
+        results = self.simplified_calculate_cost(name, amount)
+
+        result = "<div>"
+
+        for item_name, item_amount in results.items():
+            inner_html = self.get_html(item_name, item_amount, depth + 1)
+            self.html_id += 1
+
+            new_element = "<div"
+
+            if inner_html == "":
+                new_element += f">{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name}"
+            else:
+                new_element += f" id='htmlid{self.html_id}' class='item'><div onClick='$(\"#htmlid{self.html_id}\").children().slice(1).toggle();' class='hoverable'>{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
+
+            result += new_element + "</div>"
+
+        return result + "</div>"
+
+    # Writes an html file
+    def write_html(self, items: dict[str, int]):
+        fs = open("results.html", "w+")
+
+        fs.write("""<html><body><script
+src="https://code.jquery.com/jquery-3.6.1.js"
+  integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
+  crossorigin="anonymous"></script><style>html { margin-bottom: 300px; } div { user-select:none; font-size: 20px; margin: 5px; } .hoverable:hover { background-color: rgb(225, 225, 225); }</style>""")
+
+        for name, amount in items.items():
+            fs.write(f"<div>{amount} {name}</div>" + self.get_html(name, amount))
+
+        fs.write("</body></html>")
 
     # Runs the app
     def init(self):
         self.user_items = self.get_user_items()
+        starting_items = self.user_items.copy()
 
         if self.use_already_has_items:
             # Gets items the user already has by using the list the user has
@@ -478,16 +546,19 @@ class App:
                 self.user_items, self.already_has_items)
 
         # Copies the user items to a set of starting items
-        self.starting_items = self.user_items.copy()
+        # self.starting_items = self.user_items.copy()
 
         self.load_recipes()
 
-        self.user_items = self.calculate_costs(self.user_items)
+        results = self.get_results(self.user_items)
 
-        self.print_results()
-        # print(self.get_results())
+        self.print_results(results)
 
-        
+        # Should it produce html?
+        if self.config["html output"]:
+            self.write_html(starting_items)
+
+        self.evaluated_items = {}
     
 
 # Start the program
