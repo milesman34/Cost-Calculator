@@ -190,6 +190,7 @@ class App:
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
+        self.starting_items: Dict[str, int] = {}
 
         # Items that have been evaluated
         # First one is amount, second is depth
@@ -425,6 +426,43 @@ class App:
     def max_depth(self):
         return max([i[1][1] for i in self.evaluated_items.items()]) if len(self.evaluated_items) > 0 else 0
 
+    # Returns the results as a data structure
+    def get_results(self):
+        self.user_items = self.calculate_costs(self.user_items)
+
+        # Map depth of craft to item
+        results = defaultdict(list)
+
+        results[0] = [Stack(item, amount) for item, amount in self.starting_items.items()]
+
+        max_depth = self.max_depth()
+
+        for item, stats in sorted(sorted(self.evaluated_items.items(), key=lambda f: f[0]), key=lambda e: (e[1][1], e[1][0]), reverse=True):
+            # print(item, stats)
+            current_depth = max_depth - stats[1] + 1
+
+            results[current_depth].append(Stack(item, stats[0]))
+
+        stack_items = convert_to_stack_list(self.user_items)
+
+        for item in sort_stack_list(stack_items):
+            results[max_depth + 1].append(item)
+        
+        return results
+
+    # Prints the results to the user
+    def print_results(self):
+        print("")
+
+        max_depth = self.max_depth()
+
+        # Two sorts are used since they have to be done in different orders
+        for item, stats in sorted(sorted(self.evaluated_items.items(), key=lambda f: f[0]), key=lambda e: (e[1][1], e[1][0]), reverse=True):
+            # print(item, stats)
+            print(("  " * (max_depth - stats[1] + 1)) + "to craft: " + f"{to_formatted_string(stats[0])} {item}")
+
+        self.print_user_items()
+
     # Runs the app
     def init(self):
         self.user_items = self.get_user_items()
@@ -439,20 +477,17 @@ class App:
             self.user_items, self.already_has_items = subtract_dictionaries(
                 self.user_items, self.already_has_items)
 
+        # Copies the user items to a set of starting items
+        self.starting_items = self.user_items.copy()
+
         self.load_recipes()
 
         self.user_items = self.calculate_costs(self.user_items)
 
-        print("")
+        self.print_results()
+        # print(self.get_results())
 
-        max_depth = self.max_depth()
-
-        # Two sorts are used since they have to be done in different orders
-        for item, stats in sorted(sorted(self.evaluated_items.items(), key=lambda f: f[0]), key=lambda e: (e[1][1], e[1][0]), reverse=True):
-            # print(item, stats)
-            print(("  " * (max_depth - stats[1] + 1)) + "to craft: " + f"{to_formatted_string(stats[0])} {item}")
-
-        self.print_user_items()
+        
     
 
 # Start the program
