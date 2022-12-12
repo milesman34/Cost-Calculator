@@ -510,7 +510,7 @@ class App:
             if inner_html == "":
                 new_element += f">{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name}"
             else:
-                new_element += f" id='htmlid{self.html_id}' class='item'><div onClick='$(\"#htmlid{self.html_id}\").children().slice(1).toggle();' class='hoverable'>{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
+                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{'&nbsp;' * (depth + 1) * 4}{item_amount} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
 
             result += new_element + "</div>"
 
@@ -523,10 +523,28 @@ class App:
         fs.write("""<html><body><script
 src="https://code.jquery.com/jquery-3.6.1.js"
   integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
-  crossorigin="anonymous"></script><style>html { margin-bottom: 300px; } div { user-select:none; font-size: 20px; margin: 5px; } .hoverable:hover { background-color: rgb(225, 225, 225); }</style>""")
+  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; } div { user-select:none; font-size: 20px; margin: 5px; margin-left: 0px; } .hoverable:hover { background-color: rgb(25, 25, 25); }</style>""")
 
         for name, amount in items.items():
             fs.write(f"<div>{amount} {name}</div>" + self.get_html(name, amount))
+
+        # yeah so we store which values are shown/hidden
+        fs.write(f"""
+        <script>
+            let shown = [true];
+
+            for (let i = 1; i <= {self.html_id}; i++) {{
+                shown.push(true);  
+            }}
+
+            function toggle(id) {{
+                shown[id] = !shown[id];
+                $(\"#htmlid\" + id.toString()).children().slice(1).toggle();
+                let toggleid = \"#htmltoggleid\" + id.toString();
+                $(toggleid).text($(toggleid).text().slice(0, -2) + (shown[id] ? '+]' : '-]'));
+            }}
+        </script>
+        """)
 
         fs.write("</body></html>")
 
