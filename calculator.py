@@ -508,7 +508,7 @@ class App:
             inner_html = self.get_html(item_name, item_amount, depth + 1)
             self.html_id += 1
 
-            new_element = f"<div class='depth{depth + 1}'"
+            new_element = f"<div class='depth'"
             self.max_html_depth = max(self.max_html_depth, depth + 1)
 
             if inner_html == "":
@@ -527,7 +527,7 @@ class App:
         fs.write("""<html><body><script
 src="https://code.jquery.com/jquery-3.6.1.js"
   integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
-  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; } div { user-select:none; font-size: 20px; margin: 5px; margin-left: 0px; } .hoverable:hover { background-color: rgb(25, 25, 25); }</style>""")
+  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; } .depth {margin-left: 60px;} div { user-select:none; font-size: 20px; margin: 5px; margin-left: 0px; } .hoverable:hover { background-color: rgb(25, 25, 25); }</style>""")
 
         for name, amount in items.items():
             fs.write(f"<div>{amount} {name}</div>" + self.get_html(name, amount))
@@ -540,16 +540,6 @@ src="https://code.jquery.com/jquery-3.6.1.js"
             for (let i = 1; i <= {self.html_id}; i++) {{
                 shown.push(true);  
             }}
-
-            let style = '<style>';
-
-            for (let i = 1; i <= {self.max_html_depth}; i++) {{
-                style += `.depth${{i}} {{ margin-left: ${{ 20 + 20 * i }}px }}\\n`;
-            }}
-
-            style += '</style>';
-
-            $('html').append(style);
 
             function toggle(id) {{
                 shown[id] = !shown[id];
