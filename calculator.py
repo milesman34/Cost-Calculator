@@ -202,6 +202,9 @@ class App:
         # Current html id
         self.html_id = 0
 
+        # max html depth
+        self.max_html_depth = 0
+
     # Loads a YAML config file
     def load_config_file(self, path: str) -> Dict:
         with open(path, "r") as file:
@@ -505,12 +508,13 @@ class App:
             inner_html = self.get_html(item_name, item_amount, depth + 1)
             self.html_id += 1
 
-            new_element = "<div"
+            new_element = f"<div class='depth{depth + 1}'"
+            self.max_html_depth = max(self.max_html_depth, depth + 1)
 
             if inner_html == "":
-                new_element += f">{'&nbsp;' * (depth + 1) * 4}{to_formatted_string(item_amount)} {item_name}"
+                new_element += f">{to_formatted_string(item_amount)} {item_name}"
             else:
-                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{'&nbsp;' * (depth + 1) * 4}{to_formatted_string(item_amount)} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
+                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{to_formatted_string(item_amount)} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
 
             result += new_element + "</div>"
 
@@ -536,6 +540,16 @@ src="https://code.jquery.com/jquery-3.6.1.js"
             for (let i = 1; i <= {self.html_id}; i++) {{
                 shown.push(true);  
             }}
+
+            let style = '<style>';
+
+            for (let i = 1; i <= {self.max_html_depth}; i++) {{
+                style += `.depth${{i}} {{ margin-left: ${{ 20 + 20 * i }}px }}\\n`;
+            }}
+
+            style += '</style>';
+
+            $('html').append(style);
 
             function toggle(id) {{
                 shown[id] = !shown[id];
