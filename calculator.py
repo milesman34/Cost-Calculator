@@ -392,14 +392,15 @@ class App:
                             if sub_item.item_type not in self.evaluated_items:
                                 self.evaluated_items[sub_item.item_type] = [0, depth]
 
-                            self.evaluated_items[sub_item.item_type][0] += math.ceil(sub_item.amount * item.amount / self.pack[item.item_type]["produces"])
+                            # self.evaluated_items[sub_item.item_type][0] += math.ceil(sub_item.amount * item.amount / self.pack[item.item_type]["produces"])
+                            self.evaluated_items[sub_item.item_type][0] += math.ceil(item.amount / self.pack[item.item_type]["produces"]) * sub_item.amount
 
                             if self.pack[item.item_type]["produces"] > 1:
                                 depth_dictionary[depth].append(Stack(
                                     sub_item.item_type, get_cost(item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
                             else:
                                 depth_dictionary[depth].append(Stack(
-                                    sub_item.item_type, get_cost(sub_item.amount, item.amount, self.pack[item.item_type]["produces"])))
+                                    sub_item.item_type, get_cost(item.amount, sub_item.amount, 1))) # idk if sub_item or item amount order matters
                         else:
                             depth_dictionary[0].append(Stack(sub_item.item_type, get_cost(
                                 item.amount, sub_item.amount, self.pack[item.item_type]["produces"])))
@@ -546,6 +547,17 @@ src="https://code.jquery.com/jquery-3.6.1.js"
                 $(\"#htmlid\" + id.toString()).children().slice(1).toggle();
                 let toggleid = \"#htmltoggleid\" + id.toString();
                 $(toggleid).text($(toggleid).text().slice(0, -2) + (shown[id] ? '+]' : '-]'));
+            }}
+
+            // Toggles all of them to the opposite of the first element
+            function toggleAll() {{
+                let current = shown[0];
+
+                for (let i = 0; i <= {self.html_id}; i++) {{
+                    if (shown[i] === current) {{
+                        toggle(i);
+                    }}
+                }}
             }}
         </script>
         """)
