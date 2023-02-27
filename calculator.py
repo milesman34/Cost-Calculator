@@ -207,6 +207,10 @@ class App:
 
     # Loads a YAML config file
     def load_config_file(self, path: str) -> Dict:
+        if not os.path.exists(path):
+            print(f"File {path} does not exist!")
+            sys.exit()
+
         with open(path, "r") as file:
             return yaml.safe_load(file)
 

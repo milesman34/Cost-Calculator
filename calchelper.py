@@ -1,5 +1,7 @@
 import os, re, yaml
 
+from utils import *
+
 from typing import Set
 
 from functools import cache
@@ -8,10 +10,10 @@ from functools import cache
 def parse_text(text):
     text = text.lower().strip()
 
-    amount = text.split(" ")[0]
+    amount = first_word(text)
 
     if amount.isnumeric():
-        return (int(amount), " ".join(text.split(" ")[1:]))
+        return (int(amount), get_remaining_words(text))
     else:
         return (1, text)
 
