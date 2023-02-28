@@ -17,36 +17,22 @@ def parse_text(text):
     else:
         return (1, text)
 
-# Loads a YAML config file
-def load_config_file(path: str):
-    # Creates file if it does not exist
-    if not os.path.exists(path):
-        open(path, "w+")
-
-    with open(path, "r+") as file:
-        return yaml.safe_load(file)
-
 # Gets the raw materials for a given item
 @cache
-def get_all_raw_materials(item, visited=set()):
-    if item in visited:
-        return set()
-    else:
-        visited.add(item)
-
+def get_all_raw_materials(item):
     if item in pack:
         result = set()
 
         for component in pack[item]["items"]:
-            component_name = " ".join(component.split(" ")[1:])
+            component_name = get_remaining_words(component)
 
             result.update(get_all_raw_materials(component_name))
 
         return result
     else:
-        return set([item])
+        return { item }
 
-# Flattens a list
+# Flattens a 2D list
 def flatten(xss):
     return [x for xs in xss for x in xs]
 
@@ -80,8 +66,8 @@ def get_materials():
     else:
         return []
 
-# Determines if it should print items the pack does not have recipes for
-app_config = load_config_file("app-config.yaml")
+# Loads the main app config file
+app_config = load_main_config()
 
 # This script provides a wrapper around the program for easy editing and use
 os.system("clear")
@@ -89,7 +75,7 @@ os.system("clear")
 # Gets file name
 pack = input("Enter pack name: ")
 
-file_name = "packs/" + pack + ".yaml"
+file_name = f"packs/{pack}.yaml"
 
 # Edits config text
 with open("app-config.yaml", "r") as f:
@@ -114,7 +100,9 @@ print("")
 file_text = ""
 
 # Gets the yaml file
-pack = load_config_file(file_name)
+pack = load_pack_config(file_name)
+
+sys.exit()
 
 # Fixes it if the file is empty
 if pack == None:

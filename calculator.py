@@ -7,6 +7,7 @@ import yaml
 
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
+from utils import *
 
 
 # Sanitizes the input string, removing leading, trailing, and excess spaces
@@ -171,15 +172,19 @@ class App:
     def __init__(self, path: str) -> None:
         os.system("clear")
 
-        self.config = self.load_config_file(path)
+        self.config = load_config_file(path)
 
         # Gets the pack listed in the config
-        self.pack = self.load_config_file(self.config["current pack"])
+        self.pack = load_config_file(self.config["current pack"])
 
         # Gets the list of addons
-        self.addons = [self.load_config_file(addon) for addon in self.config["addons"]]
+        self.addons = [load_config_file(addon) for addon in self.config["addons"]]
 
         self.pack = functools.reduce(lambda a, b: {**a, **b}, self.addons, self.pack)
+
+        # Create empty pack if the pack doesn't have any recipes (is None)
+        if self.pack == None:
+            self.pack = {}
 
         # Gets other config options
         self.stop_commands = self.config["stop commands"]
@@ -204,15 +209,6 @@ class App:
 
         # max html depth
         self.max_html_depth = 0
-
-    # Loads a YAML config file
-    def load_config_file(self, path: str) -> Dict:
-        if not os.path.exists(path):
-            print(f"File {path} does not exist!")
-            sys.exit()
-
-        with open(path, "r") as file:
-            return yaml.safe_load(file)
 
     # Gets a list of items from the user via the command line
     def get_items_from_user(self,
