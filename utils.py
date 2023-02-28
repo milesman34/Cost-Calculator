@@ -98,12 +98,27 @@ class PackConfigFile:
         else:
             return None
 
+    # Sets a recipe
+    def set_recipe(self, item, recipe):
+        self.items[item] = recipe
+
     # Gets the set of raw materials
     def get_raw_materials(self):
         if not self.has_recipe("materials"):
             return set()
         else:
             return self.get_recipe("materials").get_item_types()
+
+    # Adds a raw material to the pack
+    def add_raw_material(self, material):
+        if not self.has_recipe("materials"): # it may have to create the list of materials
+            self.set_recipe("materials", CraftingRecipe("materials", [ItemStack(material)]))
+        else:
+            # Get the current materials recipe
+            materials_recipe = self.get_recipe("materials")
+
+            # We add the new itemstack to the end of the recipe
+            self.set_recipe("materials", CraftingRecipe("materials", materials_recipe.get_inputs() + [ItemStack(material)]))
 
 # Loads a pack config file
 def load_pack_config(path):
@@ -130,15 +145,27 @@ class CraftingRecipe:
             self.inputs.append(ItemStack(name, amount))
 
     def __repr__(self):
-        return f"{self.produces} {self.output}: {self.inputs}"
+        return f"{self.produces} {self.output}: {sorted(self.inputs, key=lambda i: i.get_item_name())}"
 
     # Gets a set of all item types needed
     def get_item_types(self):
         return set([item.get_item_name() for item in self.inputs])
 
+    # Gets the output of a recipe
+    def get_output(self):
+        return self.output
+
+    # Gets the inputs of a recipe
+    def get_inputs(self):
+        return self.inputs
+
+    # Gets how much of the item the recipe produces
+    def get_amount_produced(self):
+        return self.produces
+
 # Class representing a stack of items
 class ItemStack:
-    def __init__(self, item, amount):
+    def __init__(self, item, amount=1):
         self.item = item
         self.amount = amount
 

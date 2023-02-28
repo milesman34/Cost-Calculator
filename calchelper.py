@@ -149,22 +149,16 @@ while True:
         continue
     elif command == "raw_material":
         # Gets the material
-        material = f"1 {' '.join(output.split(' ')[1:])}"
+        material = get_remaining_words(output)
 
-        if "materials" in pack:
-            if "items" in pack["materials"]:
-                pack["materials"]["items"].append(material)
-            else:
-                pack["materials"].append(material)
-        else:   
-            pack["materials"] = [material]
+        pack.add_raw_material(material)
 
         print("")
         continue
     elif command == "raw_materials":
         # Checks the raw materials
-        entry = pack["materials"] if "materials" in pack else []
-        print("Materials:", entry["items"] if "items" in entry else entry)
+        entry = pack.get_raw_materials()
+        print("Materials:", sorted(entry))
         print("")
 
         continue
