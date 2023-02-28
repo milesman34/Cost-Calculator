@@ -102,6 +102,8 @@ file_text = ""
 # Gets the yaml file
 pack = load_pack_config(file_name)
 
+sys.exit()
+
 while True:
     # Gets the item to be produced
     output = input("output: ").strip()

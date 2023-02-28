@@ -80,8 +80,8 @@ class PackConfigFile:
 
         if yaml_file is not None: # confirm the pack exists
             for key, value in yaml_file.items():
-                self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
-                print(self.items[key])
+                if len(value["items"]) > 0: # can't have recipe with no inputs
+                    self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
 
     # Returns if the pack has a recipe for an item
     def has_recipe(self, item):
@@ -108,6 +108,8 @@ class CraftingRecipe:
         self.output = output
         self.produces = produces
 
+        self.inputs = []
+
         inputs_dict = collections.defaultdict(int)
 
         # it does some processing for the inputs to add together cases where it calls for the same item twice
@@ -118,8 +120,9 @@ class CraftingRecipe:
             inputs_dict[name] += amount
 
         for name, amount in inputs_dict.items():
-            pass
+            self.inputs.append(ItemStack(name, amount))
 
+        print(self)
 
     def __repr__(self):
         return f"{self.produces} {self.output}: {self.inputs}"
