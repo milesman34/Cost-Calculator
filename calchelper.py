@@ -20,13 +20,11 @@ def parse_text(text):
 # Gets the raw materials for a given item
 @cache
 def get_all_raw_materials(item):
-    if item in pack:
+    if pack.has_recipe(item):
         result = set()
 
-        for component in pack[item]["items"]:
-            component_name = get_remaining_words(component)
-
-            result.update(get_all_raw_materials(component_name))
+        for item2 in pack.get_recipe(item).get_item_types():
+            result.update(get_all_raw_materials(item2))
 
         return result
     else:
@@ -36,21 +34,30 @@ def get_all_raw_materials(item):
 def flatten(xss):
     return [x for xs in xss for x in xs]
 
-# Tries to print the items without recipes
-def print_without_recipes(inputs):
+# Tries to print the items without recipes based on an entry
+def print_without_recipes(item):
     print("")
 
     if app_config.should_print_items_without_recipes():
-        unique_items = list(set([i for i in inputs]))
+        recipe = pack.get_recipe(item)
+
+        # All items used in the recipe
+        unique_items = recipe.get_item_types()
+
+        # The raw materials of the pack
+        materials = pack.get_raw_materials()
         
-        print(f"Missing: {[i for i in sorted(unique_items) if not (i in pack or i in get_materials())]}")
+        print(f"Missing: {[item2 for item2 in sorted(unique_items) if not (pack.has_recipe(item2) or item2 in materials)]}")
 
         # The raw materials to be displayed are not included in the missing elements
-        if app_config["display all raw materials"]:
-            raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if not (i in unique_items or i in get_materials())]
+        if app_config.should_display_raw_materials():
+            # raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if not (i in unique_items or i in get_materials())]
+
+            # Remove items already included in the recipe
+            raw_materials = get_all_raw_materials(item).difference(unique_items)
 
             if len(raw_materials) > 0:
-                print(f"\nRaw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
+                print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
 
 # Gets the list of raw materials
 def get_materials():
@@ -102,8 +109,6 @@ file_text = ""
 # Gets the yaml file
 pack = load_pack_config(file_name)
 
-sys.exit()
-
 while True:
     # Gets the item to be produced
     output = input("output: ").strip()
@@ -116,30 +121,30 @@ while True:
         break
     elif command == "delete":
         # Deletes an entry
-        entry = get_remaining_words(output)
+        item = get_remaining_words(output)
 
-        if pack.has_recipe(entry):
-            pack.delete_recipe(entry)
+        if pack.has_recipe(item):
+            pack.delete_recipe(item)
 
-            print(f"Entry {entry} deleted!\n")
+            print(f"Entry {item} deleted!\n")
         else:
-            print(f"Entry {entry} not found!\n")
+            print(f"Entry {item} not found!\n")
 
         continue
     elif command == "check":
         # Checks if an entry exists
-        entry = get_remaining_words(output)
+        item = get_remaining_words(output)
 
-        if pack.has_recipe(entry):
+        if pack.has_recipe(item):
             try:
-                print(f"Entry {entry} found!\n")
-                print(pack.get_recipe(entry))
-                print_without_recipes([parse_text(i)[1] for i in pack[entry]["items"]])
+                print(f"Entry {item} found!\n")
+                print(pack.get_recipe(item))
+                print_without_recipes(item)
                 print("")
             except:
                 pass
         else:
-            print(f"Entry {entry} not found!\n")
+            print(f"Entry {item} not found!\n")
 
         continue
     elif command == "raw_material":

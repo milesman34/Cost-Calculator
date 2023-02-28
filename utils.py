@@ -93,10 +93,17 @@ class PackConfigFile:
 
     # Gets the recipe for an item if it exists
     def get_recipe(self, item):
-        if self.has_recipe_for(item):
+        if self.has_recipe(item):
             return self.items[item]
         else:
             return None
+
+    # Gets the set of raw materials
+    def get_raw_materials(self):
+        if not self.has_recipe("materials"):
+            return set()
+        else:
+            return self.get_recipe("materials").get_item_types()
 
 # Loads a pack config file
 def load_pack_config(path):
@@ -122,14 +129,12 @@ class CraftingRecipe:
         for name, amount in inputs_dict.items():
             self.inputs.append(ItemStack(name, amount))
 
-        print(self)
-
     def __repr__(self):
         return f"{self.produces} {self.output}: {self.inputs}"
 
-    # Gets a list of all item types needed
+    # Gets a set of all item types needed
     def get_item_types(self):
-        return [item.get_item_name() for item in self.inputs]
+        return set([item.get_item_name() for item in self.inputs])
 
 # Class representing a stack of items
 class ItemStack:
