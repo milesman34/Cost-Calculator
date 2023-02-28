@@ -30,11 +30,7 @@ def get_all_raw_materials(item):
     else:
         return { item }
 
-# Flattens a 2D list
-def flatten(xss):
-    return [x for xs in xss for x in xs]
-
-# Tries to print the items without recipes based on an entry
+# Tries to print the items without recipes based on an item name
 def print_without_recipes(item):
     print("")
 
@@ -51,10 +47,8 @@ def print_without_recipes(item):
 
         # The raw materials to be displayed are not included in the missing elements
         if app_config.should_display_raw_materials():
-            # raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if not (i in unique_items or i in get_materials())]
-
             # Remove items already included in the recipe
-            raw_materials = get_all_raw_materials(item).difference(unique_items)
+            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if not mat in materials]
 
             if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
@@ -163,7 +157,7 @@ while True:
 
         continue
     else:
-        output = parse_text(output)
+        output = make_item_stack(output)
 
     # Gets the inputs (in comma delimited string form)
     inputs = input("inputs: ")
@@ -171,24 +165,14 @@ while True:
     # Splits the comma delimited inputs using regex
     split_inputs = re.split(", *", inputs)
 
-    # Gets all of the inputs into the parsed form
-    parsed_inputs = [i for i in [parse_text(i) for i in split_inputs] if i[1] != ""]
+    # Gets all of the inputs into the parsed form (remove failed items with empty names)
+    parsed_inputs = [i for i in [make_item_stack(i) for i in split_inputs] if i.get_item_name() != ""]
+
+    # Sets the recipe for the pack
+    pack.set_recipe(output.get_item_name(), CraftingRecipe.create_with_itemstack(output, parsed_inputs))
 
     # Prints the items that don't have recipes
-    print_without_recipes([i[1] for i in parsed_inputs])
-
-    # Converts the parsed inputs into the versions used in the file
-    file_inputs = [f"{i[0]} {i[1]}" for i in parsed_inputs]
-
-    entry = {
-        "produces": output[0],
-        "items": file_inputs
-    } if output[0] != 1 else {
-        "items": file_inputs
-    }
-
-    # Overwrites the original entry
-    pack[output[1]] = entry
+    print_without_recipes(output.get_item_name())
 
     # file_text += f"\n{output[1]}:\n"
 
@@ -205,19 +189,19 @@ while True:
     print("")
 
 with open(file_name, "w+") as f:
-    for key, value in pack.items():
-        f.write(f"{key}:\n")
+    for item, recipe in pack.get_recipes_iterable():
+        f.write(f"{item}:\n")
 
-        if "produces" in value:
-            f.write(f"    produces: {value['produces']}\n\n")
+        if recipe.get_amount_produced() > 1:
+            f.write(f"    produces: {recipe.get_amount_produced()}\n\n")
 
         f.write("    items:\n")
 
         # this should work
-        items = value["items"] if "items" in value else value
+        items = recipe.get_inputs()
 
-        for item in items:
-            f.write(f"        - {item}\n")
+        for item2 in items:
+            f.write(f"        - {item2}\n")
 
         f.write("\n")
     

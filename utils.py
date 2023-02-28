@@ -120,6 +120,14 @@ class PackConfigFile:
             # We add the new itemstack to the end of the recipe
             self.set_recipe("materials", CraftingRecipe("materials", materials_recipe.get_inputs() + [ItemStack(material)]))
 
+    # Gets the list of recipes
+    def get_all_recipes(self):
+        return self.items
+
+    # Returns an key/value iterable for all of the recipes
+    def get_recipes_iterable(self):
+        return self.items.items()
+
 # Loads a pack config file
 def load_pack_config(path):
     return PackConfigFile(load_config_file(path, True))
@@ -162,6 +170,10 @@ class CraftingRecipe:
     # Gets how much of the item the recipe produces
     def get_amount_produced(self):
         return self.produces
+
+    # Creates a recipe using the output ItemStack and inputs
+    def create_with_itemstack(output, inputs):
+        return CraftingRecipe(output.get_item_name(), inputs, output.get_amount())
 
 # Class representing a stack of items
 class ItemStack:
