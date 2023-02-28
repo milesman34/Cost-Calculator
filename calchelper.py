@@ -40,7 +40,7 @@ def flatten(xss):
 def print_without_recipes(inputs):
     print("")
 
-    if app_config["print items without recipes"]:
+    if app_config.should_print_items_without_recipes():
         unique_items = list(set([i for i in inputs]))
         
         print(f"Missing: {[i for i in sorted(unique_items) if not (i in pack or i in get_materials())]}")
@@ -102,28 +102,22 @@ file_text = ""
 # Gets the yaml file
 pack = load_pack_config(file_name)
 
-sys.exit()
-
-# Fixes it if the file is empty
-if pack == None:
-    pack = {}
-
 while True:
     # Gets the item to be produced
     output = input("output: ").strip()
 
     # Command to potentially use
-    command = output.split(" ")[0]
+    command = first_word(output)
 
     # Breaks the loop if needed
     if output == "-r":
         break
     elif command == "delete":
         # Deletes an entry
-        entry = " ".join(output.split(" ")[1:])
+        entry = get_remaining_words(output)
 
-        if entry in pack:
-            del pack[entry]
+        if pack.has_recipe(entry):
+            pack.delete_recipe(entry)
 
             print(f"Entry {entry} deleted!\n")
         else:
@@ -132,12 +126,12 @@ while True:
         continue
     elif command == "check":
         # Checks if an entry exists
-        entry = " ".join(output.split(" ")[1:])
+        entry = get_remaining_words(output)
 
-        if entry in pack:
+        if pack.has_recipe(entry):
             try:
                 print(f"Entry {entry} found!\n")
-                print(pack[entry]["items"])
+                print(pack.get_recipe(entry))
                 print_without_recipes([parse_text(i)[1] for i in pack[entry]["items"]])
                 print("")
             except:

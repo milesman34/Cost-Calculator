@@ -1,4 +1,4 @@
-import os, sys, yaml
+import collections, os, sys, yaml
 
 # This file contains some utility functions to help make the codebase cleaner
 # Gets the first word from a string
@@ -78,9 +78,25 @@ class PackConfigFile:
     def __init__(self, yaml_file):
         self.items = {}
 
-        for key, value in yaml_file.items():
-            self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
-            print(self.items[key])
+        if yaml_file is not None: # confirm the pack exists
+            for key, value in yaml_file.items():
+                self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
+                print(self.items[key])
+
+    # Returns if the pack has a recipe for an item
+    def has_recipe(self, item):
+        return item in self.items
+
+    # Deletes a recipe from the pack
+    def delete_recipe(self, item):
+        del self.items[item]
+
+    # Gets the recipe for an item if it exists
+    def get_recipe(self, item):
+        if self.has_recipe_for(item):
+            return self.items[item]
+        else:
+            return None
 
 # Loads a pack config file
 def load_pack_config(path):
@@ -90,11 +106,27 @@ def load_pack_config(path):
 class CraftingRecipe:
     def __init__(self, output, inputs, produces=1):
         self.output = output
-        self.inputs = inputs
         self.produces = produces
 
+        inputs_dict = collections.defaultdict(int)
+
+        # it does some processing for the inputs to add together cases where it calls for the same item twice
+        for stack in inputs:
+            name = stack.get_item_name()
+            amount = stack.get_amount()
+
+            inputs_dict[name] += amount
+
+        for name, amount in inputs_dict.items():
+            pass
+
+
     def __repr__(self):
-        return f"({self.produces} {self.output}: {self.inputs})"
+        return f"{self.produces} {self.output}: {self.inputs}"
+
+    # Gets a list of all item types needed
+    def get_item_types(self):
+        return [item.get_item_name() for item in self.inputs]
 
 # Class representing a stack of items
 class ItemStack:
