@@ -1,4 +1,4 @@
-import collections, os, sys, yaml
+import collections, math, os, sys, yaml
 
 # This file contains some utility functions to help make the codebase cleaner
 # Gets the first word from a string
@@ -21,6 +21,16 @@ def load_config_file(path: str, create: bool=False):
 
     with open(path, "r+") as file:
         return yaml.safe_load(file)
+
+# Gets an exponent form of an int
+def to_exponent(num: int):
+    powers = int(math.log10(num))
+
+    return f"{round(num / (10 ** powers), 2)}e{powers}"
+
+# Parses number to formatted string for printing the results
+def to_formatted_string(num: int) -> str:
+    return str(num) if num < 1e6 else f"{num} ({to_exponent(num)})"
 
 # Class representing the main config file
 class MainConfigFile:
@@ -124,9 +134,21 @@ class PackConfigFile:
     def get_all_recipes(self):
         return self.items
 
-    # Returns an key/value iterable for all of the recipes
+    # Returns an key/value (item_name, recipe) iterable for all of the recipes
     def get_recipes_iterable(self):
         return self.items.items()
+
+    # Extends a pack with an addon (in the form of another PackConfigFile)
+    def extend_pack(self, addon: "PackConfigFile"):
+        for item, recipe in addon.get_recipes_iterable():
+            self.set_recipe(item, recipe)
+
+    # Gets the depth of an item's recipe
+    def get_recipe_depth(self, item):
+        if self.has_recipe(item):
+            return self.get_recipe(item).get_depth()
+        else:
+            return 0
 
 # Loads a pack config file
 def load_pack_config(path):
@@ -152,8 +174,11 @@ class CraftingRecipe:
         for name, amount in inputs_dict.items():
             self.inputs.append(ItemStack(name, amount))
 
+        # Depth is used for calculation, let's set to 0 for now
+        self.depth = 0
+
     def __repr__(self):
-        return f"{self.produces} {self.output}: {sorted(self.inputs, key=lambda i: i.get_item_name())}"
+        return f"{self.produces} {self.output}: {', '.join([str(i) for i in sorted(self.inputs, key=lambda i: i.get_item_name())])}"
 
     # Gets a set of all item types needed
     def get_item_types(self):
@@ -175,14 +200,29 @@ class CraftingRecipe:
     def create_with_itemstack(output, inputs):
         return CraftingRecipe(output.get_item_name(), inputs, output.get_amount())
 
+    # Gets the recipe depth
+    def get_depth(self):
+        return self.depth
+
+    # Sets the recipe depth
+    def set_depth(self, depth):
+        self.depth = depth
+
 # Class representing a stack of items
 class ItemStack:
-    def __init__(self, item, amount=1):
+    def __init__(self, item, amount=1, depth=0):
         self.item = item
         self.amount = amount
 
+        # Depth can be used for ItemStacks for calculation purposes
+        self.depth = depth
+
     def __repr__(self):
         return f"{self.amount} {self.item}"
+
+    # Converts it to a string representation for displaying (separate from __repr__)
+    def get_display_string(self):
+        return f"{to_formatted_string(self.amount)} {self.item}"
 
     # Gets the name of the item
     def get_item_name(self):
@@ -191,6 +231,14 @@ class ItemStack:
     # Gets the item amount
     def get_amount(self):
         return self.amount
+
+    # Gets the depth of the item within a recipe
+    def get_depth(self):
+        return self.depth
+
+    # Adds to the amount of the item
+    def add_amount(self, amount):
+        self.amount += amount
 
 # Gets an item stack from a string
 def make_item_stack(string: str):

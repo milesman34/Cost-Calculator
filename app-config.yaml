@@ -5,17 +5,18 @@ stop commands:
   - "--run"
 
 # Should the cost calculator get items the player already has?
-# Default: true
-use already has items: true
+# Default: false
+use already has items: false
 
 # Current pack to use
 # Default: "packs/default.yaml"
-current pack: packs/dj1alt.yaml
+current pack: packs/default.yaml
 
+# Addons to use (will be loaded along with the current pack)
 addons: [
 ]
 
-# Skip asking for resources the player already has?
+# Skip asking for sub-resources the player already has?
 # Default: true
 skip resources: true
 
