@@ -48,7 +48,7 @@ def print_without_recipes(item):
         # The raw materials to be displayed are not included in the missing elements
         if app_config.should_display_raw_materials():
             # Remove items already included in the recipe
-            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if not mat in materials]
+            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item]
 
             if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
@@ -173,17 +173,6 @@ while True:
 
     # Prints the items that don't have recipes
     print_without_recipes(output.get_item_name())
-
-    # file_text += f"\n{output[1]}:\n"
-
-    # if output[0] != 1:
-    #     file_text += f"   produces: {output[0]}\n\n"
-
-    # file_text += "   items:\n"
-
-    # # Iterates over inputs
-    # for item in parsed_inputs:
-    #     file_text += f"      - {item[0]} {item[1]}\n"
         
     # The empty line is part of the formatting
     print("")
