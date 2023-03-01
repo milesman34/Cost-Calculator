@@ -30,4 +30,4 @@ display all raw materials: true
 
 # Produce HTML output
 # Default: false
-html output: false
+html output: true

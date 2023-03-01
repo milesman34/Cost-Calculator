@@ -48,7 +48,7 @@ def print_without_recipes(item):
         # The raw materials to be displayed are not included in the missing elements
         if app_config.should_display_raw_materials():
             # Remove items already included in the recipe
-            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item]
+            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item and mat not in items_with_new_recipes]
 
             if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
@@ -103,6 +103,9 @@ file_text = ""
 # Gets the yaml file
 pack = load_pack_config(file_name)
 
+# set of items which got new recipes
+items_with_new_recipes = set()
+
 while True:
     # Gets the item to be produced
     output = input("output: ").strip()
@@ -121,6 +124,9 @@ while True:
             pack.delete_recipe(item)
 
             print(f"Entry {item} deleted!\n")
+
+            if item in items_with_new_recipes:
+                items_with_new_recipes.remove(item)
         else:
             print(f"Entry {item} not found!\n")
 
@@ -168,11 +174,16 @@ while True:
     # Gets all of the inputs into the parsed form (remove failed items with empty names)
     parsed_inputs = [i for i in [make_item_stack(i) for i in split_inputs] if i.get_item_name() != ""]
 
+    item_name = output.get_item_name()
+
     # Sets the recipe for the pack
-    pack.set_recipe(output.get_item_name(), CraftingRecipe.create_with_itemstack(output, parsed_inputs))
+    pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, parsed_inputs))
+
+    # Adds to the list of items with new recipes
+    items_with_new_recipes.add(item_name)
 
     # Prints the items that don't have recipes
-    print_without_recipes(output.get_item_name())
+    print_without_recipes(item_name)
         
     # The empty line is part of the formatting
     print("")
