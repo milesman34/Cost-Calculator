@@ -18,17 +18,26 @@ def parse_text(text):
         return (1, text)
 
 # Gets the raw materials for a given item
-@cache
+raw_mats_cached = {}
+
 def get_all_raw_materials(item):
-    if pack.has_recipe(item):
-        result = set()
+    try:
+        if item in items_with_new_recipes or item not in raw_mats_cached:
+            result = set()
 
-        for item2 in pack.get_recipe(item).get_item_types():
-            result.update(get_all_raw_materials(item2))
+            if pack.has_recipe(item):
+                for item2 in pack.get_recipe(item).get_item_types():
+                    result.update(get_all_raw_materials(item2))
+            else:
+                result.add(item)
 
-        return result
-    else:
-        return { item }
+            raw_mats_cached[item] = result
+            return result
+        else:
+            return raw_mats_cached[item]
+    except:
+        print(f"RecursionError with item {item}")
+        return set()
 
 # Tries to print the items without recipes based on an item name
 def print_without_recipes(item):
