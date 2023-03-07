@@ -31,6 +31,8 @@ It will ask you for the output item first. The number of items goes before the i
 
 Then it will ask you for the input items, which are delimited by items.
 
+Can quit out (saving data) with `-r`, or save data without quitting with `-s`.
+
 Example of use:
 
 ```

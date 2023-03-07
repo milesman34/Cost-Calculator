@@ -22,7 +22,7 @@ raw_mats_cached = {}
 
 def get_all_raw_materials(item):
     try:
-        if item in items_with_new_recipes or item not in raw_mats_cached:
+        if item not in raw_mats_cached:
             result = set()
 
             if pack.has_recipe(item):
@@ -76,6 +76,25 @@ def get_materials():
     else:
         return []
 
+# Saves the data
+def save_data(path):
+    with open(path, "w+") as f:
+        for item, recipe in pack.get_recipes_iterable():
+            f.write(f"{item}:\n")
+
+            if recipe.get_amount_produced() > 1:
+                f.write(f"    produces: {recipe.get_amount_produced()}\n\n")
+
+            f.write("    items:\n")
+
+            # this should work
+            items = recipe.get_inputs()
+
+            for item2 in items:
+                f.write(f"        - {item2}\n")
+
+            f.write("\n")
+
 # Loads the main app config file
 app_config = load_main_config()
 
@@ -125,6 +144,10 @@ while True:
     # Breaks the loop if needed
     if output == "-r":
         break
+    elif output == "-s": # Saves data
+        save_data(file_name)
+        print("Saved data!\n")
+        continue
     elif command == "delete":
         # Deletes an entry
         item = get_remaining_words(output)
@@ -197,20 +220,5 @@ while True:
     # The empty line is part of the formatting
     print("")
 
-with open(file_name, "w+") as f:
-    for item, recipe in pack.get_recipes_iterable():
-        f.write(f"{item}:\n")
-
-        if recipe.get_amount_produced() > 1:
-            f.write(f"    produces: {recipe.get_amount_produced()}\n\n")
-
-        f.write("    items:\n")
-
-        # this should work
-        items = recipe.get_inputs()
-
-        for item2 in items:
-            f.write(f"        - {item2}\n")
-
-        f.write("\n")
+save_data(file_name)
     
