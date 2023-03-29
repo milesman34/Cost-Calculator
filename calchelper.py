@@ -17,27 +17,29 @@ def parse_text(text):
     else:
         return (1, text)
 
-# Gets the raw materials for a given item
-raw_mats_cached = {}
+def get_all_raw_materials(_item):
+    cache = {}
 
-def get_all_raw_materials(item):
-    try:
-        if item not in raw_mats_cached:
-            result = set()
+    def get_all_raw_materials2(item):
+        try:
+            if item not in cache:
+                result = set()
 
-            if pack.has_recipe(item):
-                for item2 in pack.get_recipe(item).get_item_types():
-                    result.update(get_all_raw_materials(item2))
+                if pack.has_recipe(item):
+                    for item2 in pack.get_recipe(item).get_item_types():
+                        result.update(get_all_raw_materials2(item2))
+                else:
+                    result.add(item)
+
+                cache[item] = result
+                return result
             else:
-                result.add(item)
+                return cache[item]
+        except:
+            print(f"RecursionError with item {item}")
+            return set()
 
-            raw_mats_cached[item] = result
-            return result
-        else:
-            return raw_mats_cached[item]
-    except:
-        print(f"RecursionError with item {item}")
-        return set()
+    return get_all_raw_materials2(_item)
 
 # Tries to print the items without recipes based on an item name
 def print_without_recipes(item):
@@ -57,7 +59,7 @@ def print_without_recipes(item):
         # The raw materials to be displayed are not included in the missing elements
         if app_config.should_display_raw_materials():
             # Remove items already included in the recipe
-            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item and mat not in items_with_new_recipes]
+            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item]
 
             if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
