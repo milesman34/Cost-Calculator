@@ -127,6 +127,8 @@ class App:
 
         self.skip_resources = self.config.should_skip_asking_existing_resources()
 
+        self.open_first_html_instance = self.config.should_open_first_html_instance()
+
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
@@ -143,6 +145,9 @@ class App:
 
         # max html depth
         self.max_html_depth = 0
+
+        # maps the first instance of an item in the html to its id
+        self.first_instance_map = {}
 
     # Gets a list of items from the user via the command line
     def get_items_from_user(self,
@@ -393,6 +398,10 @@ class App:
             inner_html = self.get_html(item_name, item_amount, depth + 1)
             self.html_id += 1
 
+            # check for if its the first instance
+            if self.open_first_html_instance and item_name not in self.first_instance_map:
+                self.first_instance_map[item_name] = self.html_id
+
             new_element = f"<div class='depth'"
             self.max_html_depth = max(self.max_html_depth, depth + 1)
 
@@ -445,6 +454,15 @@ src="https://code.jquery.com/jquery-3.6.1.js"
             }}
         </script>
         """)
+
+        # Now add the script to open the first instance initially
+        if self.open_first_html_instance:
+            fs.write("<script>")
+
+            for item_name, html_id in self.first_instance_map.items():
+                fs.write(f"toggle({html_id});\n")
+
+            fs.write("</script>")
 
         fs.write("</body></html>")
 

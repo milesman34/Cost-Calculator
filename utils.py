@@ -45,6 +45,7 @@ class MainConfigFile:
         self.print_items_without_recipes = yaml_file["print items without recipes"]
         self.display_raw_materials = yaml_file["display all raw materials"]
         self.html_output = yaml_file["html output"]
+        self.open_first_html_instance = yaml_file["open first instance in html output"]
 
     # Gets the stop commands
     def get_stop_commands(self):
@@ -77,6 +78,10 @@ class MainConfigFile:
     # Gets whether the calculator should produce an HTML page representing the output
     def should_produce_html_output(self):
         return self.html_output
+
+    # Gets whether the calculator should open the first instance of each item in the HTML output
+    def should_open_first_html_instance(self):
+        return self.open_first_html_instance
 
 # Loads the main config file
 def load_main_config():

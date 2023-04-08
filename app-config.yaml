@@ -30,4 +30,8 @@ display all raw materials: true
 
 # Produce HTML output
 # Default: false
-html output: true
+html output: false
+
+# Have the first instance of each item in the HTML output be opened
+# Default false
+open first instance in html output: false
