@@ -129,7 +129,7 @@ class App:
 
         self.open_first_html_instance = self.config.should_open_first_html_instance()
 
-        self.show_left_over_amount_html = self.config.should_show_left_over_amount_html()
+        self.show_left_over_amount = self.config.should_show_left_over_amount()
 
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
@@ -359,7 +359,20 @@ class App:
         for depth, items in results.items():
             if depth > 0:
                 for item in items:
-                    print(("  " * depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()))
+                    # first let's figure out the leftover string
+                    leftover_string = ""
+
+                    if depth <= max_depth and self.show_left_over_amount:
+                        # (produces) - (amount % produces)
+                        produces = self.pack.get_recipe(item.get_item_name()).get_amount_produced()
+
+                        mod = item.get_amount() % produces
+
+                        leftover = 0 if mod == 0 else produces - mod
+
+                        leftover_string = "" if leftover == 0 else f" ({leftover} left over)"
+
+                    print(("  " * depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
 
     # Simplified cost calculation that only does one step (for html)
     def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, tuple[int]]:
@@ -426,7 +439,7 @@ class App:
             if inner_html == "":
                 new_element += f">{to_formatted_string(item_amount)} {item_name}"
             else:
-                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount_html and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{inner_html}</div>"
+                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{inner_html}</div>"
 
             result += new_element + "</div>"
 

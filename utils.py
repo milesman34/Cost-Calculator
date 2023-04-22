@@ -46,7 +46,7 @@ class MainConfigFile:
         self.display_raw_materials = yaml_file["display all raw materials"]
         self.html_output = yaml_file["html output"]
         self.open_first_html_instance = yaml_file["open first instance in html output"]
-        self.show_left_over_amount_html = yaml_file["show left over amount in html output"]
+        self.show_left_over_amount = yaml_file["show left over amount"]
 
     # Gets the stop commands
     def get_stop_commands(self):
@@ -84,9 +84,9 @@ class MainConfigFile:
     def should_open_first_html_instance(self):
         return self.open_first_html_instance
 
-    # Gets whether the calculator should show left over amounts of items for crafts in the HTML output
-    def should_show_left_over_amount_html(self):
-        return self.show_left_over_amount_html
+    # Gets whether the calculator should show left over amounts of items for crafts
+    def should_show_left_over_amount(self):
+        return self.show_left_over_amount
 
 # Loads the main config file
 def load_main_config():
