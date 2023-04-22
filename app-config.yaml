@@ -33,5 +33,9 @@ display all raw materials: true
 html output: false
 
 # Have the first instance of each item in the HTML output be opened
-# Default false
+# Default: false
 open first instance in html output: false
+
+# Show how much is left over for each craft in the HTML output
+# Default: false
+show left over amount in html output: false

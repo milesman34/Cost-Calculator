@@ -129,6 +129,8 @@ class App:
 
         self.open_first_html_instance = self.config.should_open_first_html_instance()
 
+        self.show_left_over_amount_html = self.config.should_show_left_over_amount_html()
+
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
@@ -360,7 +362,7 @@ class App:
                     print(("  " * depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()))
 
     # Simplified cost calculation that only does one step (for html)
-    def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, int]:
+    def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, tuple[int]]:
         if not self.pack.has_recipe(name):
             return {}
         else:
@@ -372,13 +374,26 @@ class App:
             result = {}
            
             for item in items:
+                item_name = item.get_item_name()
+
                 new_amount = get_cost(amount, item.get_amount(), produces)
-                result[item.get_item_name()] = new_amount
+
+                # lets get the left over amount
+                leftover = 0
+                sub_recipe = self.pack.get_recipe(item_name)
+
+                if sub_recipe is not None:
+                    sub_produced = sub_recipe.get_amount_produced()
+                    mod = new_amount % sub_produced
+
+                    leftover = sub_produced - mod if mod > 0 else 0
+                    
+                result[item_name] = (new_amount, leftover)
 
             return result
 
     # Gets the html to display for an item
-    def get_html(self, name: str, amount: int, depth: int=0) -> str:
+    def get_html(self, name: str, amount: int, leftover: int=0, depth: int=0) -> str:
         # check if item is uncraftable
         if not self.pack.has_recipe(name):
             return ""
@@ -390,12 +405,15 @@ class App:
         result = "<div>"
 
         # Sorting works differently for (str, int): prioritize items with recipes, amounts, alphabetical
-        for item_name, item_amount in sorted(
+        for item_name, item_tuple in sorted(
             sorted(
                 sorted(list(results.items()), key=lambda n: n[0]), 
-                key=lambda n: n[1],  reverse=True), 
+                key=lambda n: n[1][0],  reverse=True), 
                 key=lambda n: self.pack.has_recipe(n[0]), reverse=True):
-            inner_html = self.get_html(item_name, item_amount, depth + 1)
+
+            item_amount, item_leftover = item_tuple
+
+            inner_html = self.get_html(item_name, item_amount, item_leftover, depth + 1)
             self.html_id += 1
 
             # check for if its the first instance
@@ -408,7 +426,7 @@ class App:
             if inner_html == "":
                 new_element += f">{to_formatted_string(item_amount)} {item_name}"
             else:
-                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{to_formatted_string(item_amount)} {item_name} [+]</div><div style='display: none;'>{inner_html}</div>"
+                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount_html and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{inner_html}</div>"
 
             result += new_element + "</div>"
 
