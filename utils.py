@@ -47,6 +47,7 @@ class MainConfigFile:
         self.html_output = yaml_file["html output"]
         self.open_first_html_instance = yaml_file["open first instance in html output"]
         self.show_left_over_amount = yaml_file["show left over amount"]
+        self.use_alt_sorting_method = yaml_file["use alternate sorting depth method"]
 
     # Gets the stop commands
     def get_stop_commands(self):
@@ -87,6 +88,10 @@ class MainConfigFile:
     # Gets whether the calculator should show left over amounts of items for crafts
     def should_show_left_over_amount(self):
         return self.show_left_over_amount
+
+    # Gets whether the calculator should use the alternate sorting method
+    def should_use_alternate_sorting_method(self):
+        return self.use_alt_sorting_method
 
 # Loads the main config file
 def load_main_config():

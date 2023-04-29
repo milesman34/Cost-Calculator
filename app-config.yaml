@@ -39,3 +39,7 @@ open first instance in html output: false
 # Show how much is left over for each craft (for subcrafts)
 # Default: false
 show left over amount: false
+
+# Use the alternate method for sorting depths for display based on the item used to craft it with the highest sorting depth
+# Default: false
+use alternate sorting depth method: false

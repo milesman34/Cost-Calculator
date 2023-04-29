@@ -131,6 +131,8 @@ class App:
 
         self.show_left_over_amount = self.config.should_show_left_over_amount()
 
+        self.use_alt_sorting_method = self.config.should_use_alternate_sorting_method()
+
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
@@ -138,6 +140,9 @@ class App:
 
         # Items that have been evaluated
         self.evaluated_items: Dict[str, ItemStack] = {}
+
+        # Track the depth of a created item (for the alternate mode of sorting)
+        self.alt_sorting_depth: Dict[str, int] = {}
 
         # Items already asked about
         self.items_asked_about: List[str] = []
@@ -263,6 +268,12 @@ class App:
                 if self.pack.has_recipe(item_name):
                     recipe = self.pack.get_recipe(item_name)
                     inputs = recipe.get_inputs()
+                    main_depth = recipe.get_depth()
+
+                    if item_name not in self.alt_sorting_depth:
+                        self.alt_sorting_depth[item_name] = main_depth
+                        
+                    main_sorting_depth = self.get_alt_sorting_depth(item)
                     
                     for sub_item in inputs:
                         sub_item_name = sub_item.get_item_name()
@@ -281,6 +292,9 @@ class App:
                             # Creates a new ItemStack for the evaluated items dict if it doesn't exist
                             if sub_item_name not in self.evaluated_items:
                                 self.evaluated_items[sub_item_name] = ItemStack(sub_item_name, 0, depth)
+
+                            # The new sorting depth is the sorting depth of the most recent item minus 1, unless the current sorting depth is greater
+                            self.alt_sorting_depth[sub_item_name] = main_sorting_depth - 1 if (sub_item_name not in self.alt_sorting_depth or self.get_alt_sorting_depth(sub_item) < main_sorting_depth - 1) else self.get_alt_sorting_depth(sub_item)
 
                             # Updates evaluated items
                             self.evaluated_items[sub_item_name].add_amount(needed_amount)
@@ -321,6 +335,16 @@ class App:
         # return max([i[1][1] for i in self.evaluated_items.items()]) if len(self.evaluated_items) > 0 else 0
         return max([item for _, item in self.evaluated_items.items()], key=lambda item:item.get_depth()).get_depth() if len(self.evaluated_items) > 0 else 0
 
+    # Returns the minimum alt sorting depth
+    def min_alt_sorting_depth(self):
+        return min([depth for _, depth in self.alt_sorting_depth.items()])
+
+    # Gets the alt sorting depth for an item
+    def get_alt_sorting_depth(self, item):
+        name = item.get_item_name()
+
+        return self.alt_sorting_depth[name] if name in self.alt_sorting_depth else 0
+
     # Returns the results as a data structure using a set of user items
     def get_results(self, user_items: dict[str, int]) -> defaultdict[int, list[ItemStack]]:
         # Copies the user items to a set of starting items
@@ -335,12 +359,12 @@ class App:
 
         max_depth = self.max_depth_evaluated_items()
 
-        # Sorting priorities: depth (highest depth first), amount (highest first), alphabetical (A-Z)
+        # Sorting priorities: depth (highest depth first, alternatively we can base it off the highest depth that uses it), amount (highest first), alphabetical (A-Z)
         for item in sorted(
             sorted([i for __, i in self.evaluated_items.items()], key=lambda f: f.get_item_name()), 
-            key=lambda e: (e.get_depth(), e.get_amount()), reverse=True):
-            # print(item, stats)
-            current_depth = max_depth - item.get_depth() + 1
+            key=lambda e: (self.get_alt_sorting_depth(e) if self.use_alt_sorting_method else e.get_depth(), e.get_amount()), reverse=True):
+
+            current_depth = self.get_alt_sorting_depth(item) if self.use_alt_sorting_method else max_depth - item.get_depth() + 1
 
             results[current_depth].append(item)
 
@@ -355,10 +379,21 @@ class App:
     # Prints the results to the user
     def print_results(self, results: defaultdict[int, list[ItemStack]]):
         max_depth = self.max_depth_evaluated_items()
+        min_alt_depth = self.min_alt_sorting_depth()
 
         for depth, items in results.items():
             if depth > 0:
                 for item in items:
+                    new_depth = depth
+
+                    # Update depth if using the alternate method
+                    if self.use_alt_sorting_method:
+                        if item.get_item_name() in self.alt_sorting_depth:
+                            new_depth = max_depth - self.get_alt_sorting_depth(item) + 1
+                        else:
+                            # we need to add 1 more to get it past the craftable item with the lowest depth
+                            new_depth = max_depth - min_alt_depth + 2
+
                     # first let's figure out the leftover string
                     leftover_string = ""
 
@@ -372,7 +407,7 @@ class App:
 
                         leftover_string = "" if leftover == 0 else f" ({leftover} left over)"
 
-                    print(("  " * depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
+                    print(("  " * new_depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
 
     # Simplified cost calculation that only does one step (for html)
     def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, tuple[int]]:
