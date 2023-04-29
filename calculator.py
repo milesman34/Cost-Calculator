@@ -294,7 +294,7 @@ class App:
                                 self.evaluated_items[sub_item_name] = ItemStack(sub_item_name, 0, depth)
 
                             # The new sorting depth is the sorting depth of the most recent item minus 1, unless the current sorting depth is greater
-                            self.alt_sorting_depth[sub_item_name] = main_sorting_depth - 1 if (sub_item_name not in self.alt_sorting_depth or self.get_alt_sorting_depth(sub_item) < main_sorting_depth - 1) else self.get_alt_sorting_depth(sub_item)
+                            self.alt_sorting_depth[sub_item_name] = main_sorting_depth - 1 if (sub_item_name not in self.alt_sorting_depth or self.get_alt_sorting_depth(sub_item) > main_sorting_depth - 1) else self.get_alt_sorting_depth(sub_item)
 
                             # Updates evaluated items
                             self.evaluated_items[sub_item_name].add_amount(needed_amount)
