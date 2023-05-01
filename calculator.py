@@ -106,8 +106,14 @@ def get_cost(target_items: int, required_per_craft: int, produces: int) -> int:
 
 # Represents the cost-calculator app
 class App:
-    def __init__(self) -> None:
+    def __init__(self, args=[]) -> None:
         os.system("clear")
+
+        # Determine if it should print to an external file instead
+        self.should_print_to_file = len(args) > 1 and args[1] == "-o"
+
+        if self.should_print_to_file:
+            self.print_target = open(args[2], "w+")
 
         self.config = load_main_config()
 
@@ -155,6 +161,13 @@ class App:
 
         # maps the first instance of an item in the html to its id
         self.first_instance_map = {}
+
+    # Prints a string to output
+    def print_output(self, string: str):
+        if self.should_print_to_file:
+            self.print_target.write(string + "\n")
+
+        print(string)
 
     # Gets a list of items from the user via the command line
     def get_items_from_user(self,
@@ -337,7 +350,7 @@ class App:
 
     # Returns the minimum alt sorting depth
     def min_alt_sorting_depth(self):
-        return min([depth for _, depth in self.alt_sorting_depth.items()])
+        return min([depth for _, depth in self.alt_sorting_depth.items()]) if len(self.alt_sorting_depth) > 0 else 0
 
     # Gets the alt sorting depth for an item
     def get_alt_sorting_depth(self, item):
@@ -407,7 +420,7 @@ class App:
 
                         leftover_string = "" if leftover == 0 else f" ({leftover} left over)"
 
-                    print(("  " * new_depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
+                    self.print_output(("  " * new_depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
 
     # Simplified cost calculation that only does one step (for html)
     def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, tuple[int]]:
@@ -563,6 +576,6 @@ src="https://code.jquery.com/jquery-3.6.1.js"
 
 # Start the program
 if __name__ == "__main__":
-    app = App()
+    app = App(sys.argv)
 
     app.init()
