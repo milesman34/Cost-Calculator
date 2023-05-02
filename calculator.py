@@ -482,16 +482,19 @@ class App:
 
             is_empty = inner_html == ""
 
+            xpstring = to_formatted_string(item_amount)
+
             if is_empty:
-                self.html_cache[(item_name, item_amount, item_leftover)] = (item_name, item_amount, item_leftover)
-                new_element += f"> {item_amount} {item_name}\n"
+                self.html_cache[(item_name, xpstring, item_leftover)] = (item_name, xpstring, item_leftover)
+                new_element += f"> {xpstring} {item_name}\n"
             else:
                 # new_element += f" class='htmlid'>"
-                new_element += f" class='htmlid'><div class='toggleid'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{item_name} {item_amount} {item_leftover}</div>"
+                # Double space is required to ensure splitting works properly with formatted exponent strings
+                new_element += f" class='htmlid'><div class='toggleid'>{xpstring} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{item_name}  {xpstring}  {item_leftover}</div>"
             #     new_element += f" class='htmlid'><div class='toggleid'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>('{item_name}' {item_amount} {item_leftover})</div>\n"
             #     new_element += f">"
 
-            cache_result.append((item_name, item_amount, item_leftover))
+            cache_result.append((item_name, xpstring, item_leftover))
 
             
             # new_element += f">{item_name} {item_amount}"
@@ -499,7 +502,7 @@ class App:
             result += new_element + "</div>\n"
 
         
-        self.html_cache[(name, amount, leftover)] = cache_result
+        self.html_cache[(name, to_formatted_string(amount), leftover)] = cache_result
 
         return result + "</div>\n"
 
@@ -517,7 +520,7 @@ src="https://code.jquery.com/jquery-3.6.1.js"
 
         # Create string from key
         def key_string(k):
-            return f"{k[0]} {k[1]} {k[2]}"
+            return f"{k[0]}  {k[1]}  {k[2]}"
 
         # let's set up the cache
         string = ""
@@ -555,14 +558,14 @@ src="https://code.jquery.com/jquery-3.6.1.js"
                 
                 centry.forEach(entry => {{
                     let element = $(`<div></div>`);
-					let split = entry.split(" ");
+					let split = entry.split("  ");
 
                     let amount = split[split.length - 2];
                     let leftover = split[split.length - 1];
 					let name = split.slice(0, -2).join(" ");
 					
 					if (entry in cache) {{
-						element.html(`<div class="depth htmlid"><div class="toggleid">${{amount}} ${{name}}${{{'parseInt(leftover) > 0 ? ` (${leftover} left over)` : ""}' if self.show_left_over_amount else ""} [+]</div><div style="display: none;">${{name}} ${{amount}} ${{leftover}}</div></div>`);
+						element.html(`<div class="depth htmlid"><div class="toggleid">${{amount}} ${{name}}${{{'parseInt(leftover) > 0 ? ` (${leftover} left over)` : ""}' if self.show_left_over_amount else ""} [+]</div><div style="display: none;">${{name}}  ${{amount}}  ${{leftover}}</div></div>`);
 					}} else {{
 						element = $(`<div class="depth"> ${{amount}} ${{name}}</div>`);
 					}}
