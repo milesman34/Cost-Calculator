@@ -10,7 +10,7 @@ use already has items: false
 
 # Current pack to use
 # Default: "packs/default.yaml"
-current pack: packs/gtnh.yaml
+current pack: packs/default.yaml
 
 # Addons to use (will be loaded along with the current pack)
 addons: [
@@ -30,7 +30,7 @@ display all raw materials: true
 
 # Produce HTML output
 # Default: false
-html output: true
+html output: false
 
 # Have the first instance of each item in the HTML output be opened
 # Default: false
@@ -38,8 +38,8 @@ open first instance in html output: false
 
 # Show how much is left over for each craft (for subcrafts)
 # Default: false
-show left over amount: true
+show left over amount: false
 
 # Use the alternate method for sorting depths for display based on the item used to craft it with the highest sorting depth
 # Default: false
-use alternate sorting depth method: true
+use alternate sorting depth method: false
