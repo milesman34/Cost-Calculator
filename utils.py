@@ -45,7 +45,6 @@ class MainConfigFile:
         self.print_items_without_recipes = yaml_file["print items without recipes"]
         self.display_raw_materials = yaml_file["display all raw materials"]
         self.html_output = yaml_file["html output"]
-        self.open_first_html_instance = yaml_file["open first instance in html output"]
         self.show_left_over_amount = yaml_file["show left over amount"]
         self.use_alt_sorting_method = yaml_file["use alternate sorting depth method"]
 
@@ -80,10 +79,6 @@ class MainConfigFile:
     # Gets whether the calculator should produce an HTML page representing the output
     def should_produce_html_output(self):
         return self.html_output
-
-    # Gets whether the calculator should open the first instance of each item in the HTML output
-    def should_open_first_html_instance(self):
-        return self.open_first_html_instance
 
     # Gets whether the calculator should show left over amounts of items for crafts
     def should_show_left_over_amount(self):

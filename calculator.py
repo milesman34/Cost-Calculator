@@ -133,8 +133,6 @@ class App:
 
         self.skip_resources = self.config.should_skip_asking_existing_resources()
 
-        self.open_first_html_instance = self.config.should_open_first_html_instance()
-
         self.show_left_over_amount = self.config.should_show_left_over_amount()
 
         self.use_alt_sorting_method = self.config.should_use_alternate_sorting_method()
@@ -159,8 +157,8 @@ class App:
         # max html depth
         self.max_html_depth = 0
 
-        # maps the first instance of an item in the html to its id
-        self.first_instance_map = {}
+        # cache for html elements
+        self.html_cache = {}
 
     # Prints a string to output
     def print_output(self, string: str):
@@ -465,6 +463,8 @@ class App:
 
         result = "<div>"
 
+        cache_result = []
+
         # Sorting works differently for (str, int): prioritize items with recipes, amounts, alphabetical
         for item_name, item_tuple in sorted(
             sorted(
@@ -477,21 +477,31 @@ class App:
             inner_html = self.get_html(item_name, item_amount, item_leftover, depth + 1)
             self.html_id += 1
 
-            # check for if its the first instance
-            if self.open_first_html_instance and item_name not in self.first_instance_map:
-                self.first_instance_map[item_name] = self.html_id
-
             new_element = f"<div class='depth'"
             self.max_html_depth = max(self.max_html_depth, depth + 1)
 
-            if inner_html == "":
-                new_element += f">{to_formatted_string(item_amount)} {item_name}"
+            is_empty = inner_html == ""
+
+            if is_empty:
+                self.html_cache[(item_name, item_amount, item_leftover)] = (item_name, item_amount, item_leftover)
+                new_element += f"> {item_amount} {item_name}\n"
             else:
-                new_element += f" id='htmlid{self.html_id}' class='item'><div id='htmltoggleid{self.html_id}' onClick='toggle({self.html_id});' class='hoverable'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{inner_html}</div>"
+                # new_element += f" class='htmlid'>"
+                new_element += f" class='htmlid'><div class='toggleid'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{item_name} {item_amount} {item_leftover}</div>"
+            #     new_element += f" class='htmlid'><div class='toggleid'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>('{item_name}' {item_amount} {item_leftover})</div>\n"
+            #     new_element += f">"
 
-            result += new_element + "</div>"
+            cache_result.append((item_name, item_amount, item_leftover))
 
-        return result + "</div>"
+            
+            # new_element += f">{item_name} {item_amount}"
+
+            result += new_element + "</div>\n"
+
+        
+        self.html_cache[(name, amount, leftover)] = cache_result
+
+        return result + "</div>\n"
 
     # Writes an html file
     def write_html(self, items: dict[str, int]):
@@ -500,48 +510,82 @@ class App:
         fs.write("""<html><body><script
 src="https://code.jquery.com/jquery-3.6.1.js"
   integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
-  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; } .depth {margin-left: 60px;} div { user-select:none; font-size: 20px; margin: 5px; margin-left: 0px; } .hoverable:hover { background-color: rgb(25, 25, 25); }</style>""")
+  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; } .depth {margin-left: 60px;} div { user-select:none; font-size: 20px; margin: 5px; margin-left: 0px; } .toggleid:hover { background-color: rgb(25, 25, 25); }</style>""")
 
         for name, amount in items.items():
-            fs.write(f"<div>{amount} {name}</div>{self.get_html(name, amount)}")
+            fs.write(f"\n<div class='root'>{amount} {name}</div>{self.get_html(name, amount)}")
 
-        # yeah so we store which values are shown/hidden
+        # Create string from key
+        def key_string(k):
+            return f"{k[0]} {k[1]} {k[2]}"
+
+        # let's set up the cache
+        string = ""
+
+        for k, v in self.html_cache.items():
+            if type(v) == list:
+                string += f"cache[\"{key_string(k)}\"] = {[key_string(i) for i in v]};\n"
+
         fs.write(f"""
-        <script>
-            let shown = [true];
-
-            for (let i = 1; i <= {self.html_id}; i++) {{
-                shown.push(true);  
-            }}
-
-            function toggle(id) {{
-                shown[id] = !shown[id];
-                $(\"#htmlid\" + id.toString()).children().slice(1).toggle();
-                let toggleid = \"#htmltoggleid\" + id.toString();
-                $(toggleid).text($(toggleid).text().slice(0, -2) + (shown[id] ? '+]' : '-]'));
-            }}
-
-            // Toggles all of them to the opposite of the first element
-            function toggleAll() {{
-                let current = shown[0];
-
-                for (let i = 0; i <= {self.html_id}; i++) {{
-                    if (shown[i] === current) {{
-                        toggle(i);
-                    }}
-                }}
-            }}
-        </script>
+            <script>
+            let cache = {{}};
+            {string}\n
+            </script>\n
         """)
 
-        # Now add the script to open the first instance initially
-        if self.open_first_html_instance:
-            fs.write("<script>")
+        # script for buttons
+        fs.write(f"""
+        <script>
+            // add elements for all children
+            function addElements(elem) {{
+                let child = elem.parent().children().eq(1);
 
-            for item_name, html_id in self.first_instance_map.items():
-                fs.write(f"toggle({html_id});\n")
+                if (child[0] === undefined)
+                    return;
 
-            fs.write("</script>")
+                let name = child.html();
+
+                if (!(name in cache))
+                    return;
+
+                let centry = cache[name];
+                
+                // Add onto the children
+                child.remove(); 
+                
+                centry.forEach(entry => {{
+                    let element = $(`<div></div>`);
+					let split = entry.split(" ");
+
+                    let amount = split[split.length - 2];
+                    let leftover = split[split.length - 1];
+					let name = split.slice(0, -2).join(" ");
+					
+					if (entry in cache) {{
+						element.html(`<div class="depth htmlid"><div class="toggleid">${{amount}} ${{name}}${{{'parseInt(leftover) > 0 ? ` (${leftover} left over)` : ""}' if self.show_left_over_amount else ""} [+]</div><div style="display: none;">${{name}} ${{amount}} ${{leftover}}</div></div>`);
+					}} else {{
+						element = $(`<div class="depth"> ${{amount}} ${{name}}</div>`);
+					}}
+                    
+                    elem.parent().append(element);
+                }});
+            }}
+
+            $(document).on("click", event => {{
+                let elem = $(event.target);
+                            
+                if (elem.attr("class") === "toggleid") {{
+                    // toggle child elements, update symbol to + or - depending on circumstance
+                    elem.text(elem.text().slice(0, -3) + (elem.parent().children().eq(1).is(':visible') ? '[+]' : '[-]'))
+                    elem.parent().children().slice(1).toggle();
+
+
+                    // create new elements if needed
+                    addElements(elem);
+                }}
+            }});
+        </script>
+        """)
 
         fs.write("</body></html>")
 
