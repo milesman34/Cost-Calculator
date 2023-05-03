@@ -159,6 +159,7 @@ class App:
 
         # cache for html elements
         self.html_cache = {}
+        self.html_result_cache = {}
 
     # Prints a string to output
     def print_output(self, string: str):
@@ -456,6 +457,8 @@ class App:
         # check if item is uncraftable
         if not self.pack.has_recipe(name):
             return ""
+        elif (name, amount, leftover, depth) in self.html_result_cache:
+            return self.html_result_cache[(name, amount, leftover, depth)]
             
         self.evaluated_items = {}
 
@@ -474,6 +477,8 @@ class App:
 
             item_amount, item_leftover = item_tuple
 
+            xpstring = to_formatted_string(item_amount)
+
             inner_html = self.get_html(item_name, item_amount, item_leftover, depth + 1)
             self.html_id += 1
 
@@ -481,8 +486,6 @@ class App:
             self.max_html_depth = max(self.max_html_depth, depth + 1)
 
             is_empty = inner_html == ""
-
-            xpstring = to_formatted_string(item_amount)
 
             if is_empty:
                 self.html_cache[(item_name, xpstring, item_leftover)] = (item_name, xpstring, item_leftover)
@@ -503,8 +506,10 @@ class App:
 
         
         self.html_cache[(name, to_formatted_string(amount), leftover)] = cache_result
+        result += "</div>\n"
+        self.html_result_cache[(name, amount, leftover, depth)] = result
 
-        return result + "</div>\n"
+        return result
 
     # Writes an html file
     def write_html(self, items: dict[str, int]):
@@ -523,16 +528,20 @@ src="https://code.jquery.com/jquery-3.6.1.js"
             return f"{k[0]}///{k[1]}///{k[2]}"
 
         # let's set up the cache
-        string = ""
+        string_arr = []
+
+        count = 0
 
         for k, v in self.html_cache.items():
             if type(v) == list:
-                string += f"cache[\"{key_string(k)}\"] = {[key_string(i) for i in v]};\n"
+                string_arr.append(f"cache[\"{key_string(k)}\"] = {[key_string(i) for i in v]};\n")
+
+                count += 1
 
         fs.write(f"""
             <script>
             let cache = {{}};
-            {string}\n
+            {"".join(string_arr)}\n
             </script>\n
         """)
 
