@@ -1,6 +1,6 @@
 Cost-Calculator is a command-line program for Python 3 that calculates the costs of items in video games. It is designed around Minecraft.
 
-You must have python3 (3.7 recommended) and pyyaml installed for this to work.
+You must have python3 (3.7 recommended) and pyyaml installed for this to work. It is designed around bash, so for running it on Windows it is recommended to use Windows Subsystem for Linux.
 
 # Usage
 
