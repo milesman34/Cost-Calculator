@@ -47,6 +47,7 @@ class MainConfigFile:
         self.html_output = yaml_file["html output"]
         self.show_left_over_amount = yaml_file["show left over amount"]
         self.use_alt_sorting_method = yaml_file["use alternate sorting depth method"]
+        self.show_crafting_bytes = yaml_file["show crafting bytes"]
 
     # Gets the stop commands
     def get_stop_commands(self):
@@ -88,6 +89,10 @@ class MainConfigFile:
     def should_use_alternate_sorting_method(self):
         return self.use_alt_sorting_method
 
+    # Gets whether the calculator should show crafting bytes
+    def should_show_crafting_bytes(self):
+        return self.show_crafting_bytes
+
 # Loads the main config file
 def load_main_config():
     return MainConfigFile(load_config_file("app-config.yaml"))
@@ -122,12 +127,16 @@ class PackConfigFile:
     def set_recipe(self, item, recipe):
         self.items[item] = recipe
 
-    # Gets the set of raw materials
-    def get_raw_materials(self):
-        if not self.has_recipe("materials"):
+    # Gets the types of items used in a recipe
+    def get_recipe_item_types(self, item):
+        if not self.has_recipe(item):
             return set()
         else:
-            return self.get_recipe("materials").get_item_types()
+            return self.get_recipe(item).get_item_types()
+
+    # Gets the set of raw materials
+    def get_raw_materials(self):
+        return self.get_recipe_item_types("materials")
 
     # Adds a raw material to the pack
     def add_raw_material(self, material):
@@ -139,6 +148,21 @@ class PackConfigFile:
 
             # We add the new itemstack to the end of the recipe
             self.set_recipe("materials", CraftingRecipe("materials", materials_recipe.get_inputs() + [ItemStack(material)]))
+
+    # Gets the set of ae2 fluids
+    def get_ae2_fluids(self):
+        return self.get_recipe_item_types("ae2_fluids")
+
+    # Adds an ae2 fluid to the pack
+    def add_ae2_fluid(self, fluid):
+        if not self.has_recipe("ae2_fluids"): # it may have to create the list of materials
+            self.set_recipe("ae2_fluids", CraftingRecipe("ae2_fluids", [ItemStack(fluid)]))
+        else:
+            # Get the current ae2 fluids recipe
+            fluids_recipe = self.get_recipe("ae2_fluids")
+
+            # We add the new itemstack to the end of the recipe
+            self.set_recipe("ae2_fluids", CraftingRecipe("ae2_fluids", fluids_recipe.get_inputs() + [ItemStack(fluid)]))
 
     # Gets the list of recipes
     def get_all_recipes(self):

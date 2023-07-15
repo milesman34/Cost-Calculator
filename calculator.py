@@ -137,6 +137,8 @@ class App:
 
         self.use_alt_sorting_method = self.config.should_use_alternate_sorting_method()
 
+        self.show_crafting_bytes = self.config.should_show_crafting_bytes()
+
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
         self.already_has_items: Dict[str, int] = {}
@@ -160,6 +162,12 @@ class App:
         # cache for html elements
         self.html_cache = {}
         self.html_result_cache = {}
+
+        # track crafting bytes
+        self.crafting_bytes = 0
+
+        # gets list of ae2 fluids
+        self.ae2_fluids = self.pack.get_ae2_fluids()
 
     # Prints a string to output
     def print_output(self, string: str):
@@ -262,6 +270,16 @@ class App:
 
         return dct
 
+    # gets the amount of bytes used for an item in crafting
+    def crafting_bytes_for_items(self, item: ItemStack) -> int:
+        name = item.get_item_name()
+        amount = item.get_amount()
+
+        if name in self.ae2_fluids: # if the item is a fluid then divide by 1000 for the bytes
+            return math.ceil(amount / 1000)
+        else:
+            return amount
+
     # Calculates the costs of items
     def calculate_costs(self, items: Dict[str, int]) -> Dict[str, int]:
         max_depth = self.get_max_depth(items)
@@ -276,11 +294,17 @@ class App:
             for item in depth_dictionary[max_depth]:
                 item_name = item.get_item_name()
 
+                # bytes added here are equal to the number of the item
+                self.crafting_bytes += self.crafting_bytes_for_items(item)
+
                 # Is a craftable item
                 if self.pack.has_recipe(item_name):
                     recipe = self.pack.get_recipe(item_name)
                     inputs = recipe.get_inputs()
                     main_depth = recipe.get_depth()
+
+                    # adds number of times a recipe was done * 8 to the bytes amount
+                    self.crafting_bytes += math.ceil(item.get_amount() / recipe.get_amount_produced()) * 8
 
                     if item_name not in self.alt_sorting_depth:
                         self.alt_sorting_depth[item_name] = main_depth
@@ -419,7 +443,14 @@ class App:
 
                         leftover_string = "" if leftover == 0 else f" ({leftover} left over)"
 
+                    # if the item is a raw material, then we never updated crafting bytes so we need to do that
+                    if depth > max_depth:
+                        self.crafting_bytes += self.crafting_bytes_for_items(item)
+
                     self.print_output(("  " * new_depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
+
+        if self.show_crafting_bytes:
+            print(f"\nBytes used: {self.crafting_bytes}")
 
     # Simplified cost calculation that only does one step (for html)
     def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, tuple[int]]:

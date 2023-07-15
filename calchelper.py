@@ -196,6 +196,20 @@ while True:
         print("")
 
         continue
+    elif command == "ae2_fluid":
+        # Gets the material
+        material = get_remaining_words(output)
+
+        pack.add_ae2_fluid(material)
+
+        print("")
+        continue
+    elif command == "ae2_fluids":
+        entry = pack.get_ae2_fluids()
+        print("AE2 Fluids:", sorted(entry))
+        print("")
+
+        continue
     else:
         output = make_item_stack(output)
 
