@@ -549,7 +549,7 @@ class App:
         fs.write("""<html><body><script
 src="https://code.jquery.com/jquery-3.6.1.js"
   integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
-  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; } .depth {margin-left: 60px;} div { user-select:none; font-size: 20px; margin: 5px; margin-left: 0px; } .toggleid:hover { background-color: rgb(25, 25, 25); }</style>""")
+  crossorigin="anonymous"></script><style>html { font-family: monospace, monospace; color: rgb(85, 255, 85); background-color: black; width: 100%; overflow: auto; -ms-overflow-style: none; scrollbar-width: none; } html::-webkit-scrollbar {display: none;} .depth {margin-left: 60px;} div { user-select:none; font-size: 20px; margin-top: 5px; margin-bottom: 5px; width: 100%; margin-left: 0px; } .toggleid:hover { background-color: rgb(25, 25, 25); }</style>""")
 
         for name, amount in items.items():
             fs.write(f"\n<div class='root'>{amount} {name}</div>{self.get_html(name, amount)}")
