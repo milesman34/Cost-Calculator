@@ -1,4 +1,10 @@
-import collections, math, os, sys, yaml
+import collections, math, os, platform, sys, yaml
+
+clear_command = "cls" if platform.system() == "Windows" else "clear"
+
+# Clears the screen
+def clear():
+    os.system(clear_command)
 
 # This file contains some utility functions to help make the codebase cleaner
 # Gets the first word from a string

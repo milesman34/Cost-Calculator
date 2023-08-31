@@ -107,7 +107,7 @@ def get_cost(target_items: int, required_per_craft: int, produces: int) -> int:
 # Represents the cost-calculator app
 class App:
     def __init__(self, args=[]) -> None:
-        os.system("clear")
+        clear()
 
         # Determine if it should print to an external file instead
         self.should_print_to_file = len(args) > 1 and args[1] == "-o"
@@ -450,7 +450,7 @@ class App:
                     self.print_output(("  " * new_depth) + (f"to craft: {item.get_display_string()}" if depth <= max_depth else item.get_display_string()) + leftover_string)
 
         if self.show_crafting_bytes:
-            print(f"\nBytes used: {self.crafting_bytes}")
+            print(f"\nBytes used: {to_formatted_string(self.crafting_bytes)}")
 
     # Simplified cost calculation that only does one step (for html)
     def simplified_calculate_cost(self, name: str, amount: int) -> dict[str, tuple[int]]:

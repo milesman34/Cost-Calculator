@@ -101,7 +101,7 @@ def save_data(path):
 app_config = load_main_config()
 
 # This script provides a wrapper around the program for easy editing and use
-os.system("clear")
+clear()
 
 # Gets file name
 pack = input("Enter pack name: ")
