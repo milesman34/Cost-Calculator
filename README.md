@@ -2,7 +2,7 @@ Cost-Calculator is a command-line program for Python 3 that calculates the costs
 
 You must have python3 (3.7 recommended) and pyyaml installed for this to work. You can install pyyaml using `python3 -m pip install pyyaml`.
 
-To run the GUI version, you need flet installed. You can install flet using `pip install flet`.
+To run the GUI version, you need flet installed. You can install flet using `python3 -m pip install flet`.
 
 # Usage
 
