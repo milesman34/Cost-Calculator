@@ -2,6 +2,8 @@ Cost-Calculator is a command-line program for Python 3 that calculates the costs
 
 You must have python3 (3.7 recommended) and pyyaml installed for this to work. You can install pyyaml using `python3 -m pip install pyyaml`.
 
+To run the GUI version, you need flet installed. You can install flet using `pip install flet`.
+
 # Usage
 
 When using, make sure to separate your inputs with spaces. They should be in the format `amount item_type`, where `amount` is an `int` and `item_type` is a `str`. The amount should also not be a negative number or a decimal.
@@ -54,3 +56,5 @@ You may also overwrite entries, delete them with the `delete` prefix (example: `
 You can use the `raw_material` prefix to add a new raw material, and use `raw_materials` to check the raw materials.
 
 You can use the `ae2_fluid` prefix to add a new fluid, and use `ae2_fluids` to check the fluids. These fluids are used mainly for crafting byte calculation, as AE2 treats every item as a byte, but every 1000 mb of a fluid as a byte.
+
+I could add a GUI version of the calchelper
