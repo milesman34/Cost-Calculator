@@ -1,7 +1,15 @@
 import flet as ft
+import calchelper, os, yaml
+
+from utils import *
 
 # This class represents the launch screen (picking a pack)
 class LaunchScreen(ft.UserControl):
+    def __init__(self, page):
+        self.page = page
+        
+        super().__init__()
+
     def build(self):
         self.pack_input = ft.TextField(autofocus=True, on_submit=self.confirm, expand=1)
 
@@ -22,22 +30,10 @@ class LaunchScreen(ft.UserControl):
 
     # confirms the selected pack
     def confirm(self, e):
-        print("confirmed pack", self.pack_input.value)
+        file_name = f"packs/{self.pack_input.value}.yaml"
+        calchelper.edit_configs_with_pack_name(file_name)
 
-# # This class represents the actual app
-# class CalcHelperApp(ft.UserControl):
-#     def __init__(self):
-#         super().__init__()
-
-#         # what state is the app in
-#         self.state = "launch"
-
-#         # instances of the various screens
-#         self.launch_screen = LaunchScreen()
-
-#     def build(self):
-#         if self.state == "launch":
-#             return self.launch_screen
+        self.page.window_close()
 
 def launch_screen(page):
     page.window_width = 500
@@ -45,8 +41,8 @@ def launch_screen(page):
     page.title = "Enter pack name:"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
 
-    calchelper = LaunchScreen()
+    launch = LaunchScreen(page)
 
-    page.add(calchelper)
+    page.add(launch)
 
 ft.app(target=launch_screen)
