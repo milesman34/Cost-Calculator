@@ -388,15 +388,146 @@ class RecipeModifier(ft.Container):
         self.text_field.value = ""
         self.text_field.focus()
 
+# This class represents the toggle button between raw materials and fluids
+class MaterialToggleButton(ft.Container):
+    def __init__(self, parent):
+        super().__init__()
+        self.expand = 1
+        self.parent = parent
+
+        self.content = ft.FilledButton(text="Raw Materials", on_click=self.handle_click, tooltip="Press to toggle between Raw Materials and Fluids", style=ft.ButtonStyle(color=ft.colors.BLACK, bgcolor=ft.colors.BLUE, shape=ft.RoundedRectangleBorder(radius=0)))
+
+    # Handles a click
+    def handle_click(self, e):
+        if self.content.text == "Raw Materials":
+            self.content.text = "Fluids"
+        else:
+            self.content.text = "Raw Materials"
+
+        self.parent.toggle(self.content.text)
+
+        self.update()
+
+# This class adds or removes raw materials or fluids
+class FluidMaterialsModifier(ft.Container):
+    # give it a type parameter which is materials or ae2_fluids
+    def __init__(self, typeparam, pack):
+        super().__init__()
+
+        self.type = typeparam
+        self.pack = pack
+        self.margin = 5
+        self.expand = True
+
+        # track the raw materials or fluids
+        self.material_list = ft.Column([], spacing=10, scroll=ft.ScrollMode.AUTO)
+
+        # Text field for adding/removing
+        self.text_field = ft.TextField(label=f"Enter {'material' if self.type == 'materials' else 'fluid'}", color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
+                    color=ft.colors.BLACK
+                ), on_submit=self.add_material, width=150)
+
+        self.content = ft.Column([
+            wrap_expand(self.material_list, 6),
+
+            wrap_expand(center_object(self.text_field), 1),
+
+            ft.Container(ft.Row([
+                wrap_expand(ft.FloatingActionButton(icon=ft.icons.ADD, bgcolor=ft.colors.GREEN, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.add_material), 1),
+                wrap_expand(None, 1),
+                wrap_expand(ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.remove_material), 1),
+            ], expand=True), expand=1)
+
+            # wrap_expand(None, 1)
+        ], spacing=0, expand=True)
+
+        self.load_materials(True)
+
+    # Loads the raw materials or fluids
+    def load_materials(self, on_load=False):
+        items = self.pack.get_raw_materials() if self.type == "materials" else self.pack.get_ae2_fluids()
+
+        self.material_list.controls = []
+
+        for item in sorted(items):
+            self.material_list.controls.append(ft.Row([
+                ft.Text(item, color=ft.colors.BLACK)
+            ]))
+
+    # Adds a material of the given type
+    def add_material(self, e):
+        name = self.text_field.value.lower().strip()
+
+        if name == "":
+            return
+
+        if self.type == "materials":
+            if name not in self.pack.get_raw_materials():
+                self.pack.add_raw_material(name)
+        elif name not in self.pack.get_ae2_fluids():
+            self.pack.add_ae2_fluid(name)
+
+        self.text_field.value = ""
+        
+        self.load_materials()
+        self.update()
+
+    # Removes a material of the given type
+    def remove_material(self, e):
+        name = self.text_field.value.lower().strip()
+
+        if name == "":
+            return
+
+        if self.type == "materials":
+            if name in self.pack.get_raw_materials():
+                mats = self.pack.get_recipe("materials")
+
+                if mats is not None:
+                    mats.inputs = [i for i in mats.inputs if i.get_item_name() != name]
+        elif name in self.pack.get_ae2_fluids():
+            mats = self.pack.get_recipe("ae2_fluids")
+
+            if mats is not None:
+                mats.inputs = [i for i in mats.inputs if i.get_item_name() != name]
+
+        self.text_field.value = ""
+        
+        self.load_materials()
+        self.update()
+
 # This class represents the part of the program which manages fluids and raw materials
 class FluidMaterialsManager(ft.Container):
-    def __init__(self, expand):
+    def __init__(self, expand, pack):
         super().__init__()
 
         self.expand = expand
         self.margin = 0
 
         self.bgcolor = ft.colors.BLUE_700
+
+        self.materials_modifier = FluidMaterialsModifier("materials", pack)
+        self.fluid_modifier = FluidMaterialsModifier("ae2_fluids", pack)
+
+        self.center_row = ft.Row([self.materials_modifier], expand=9)
+
+        self.content = ft.Column([
+            ft.Row([
+                MaterialToggleButton(self)
+            ]),
+            self.center_row
+        ], spacing=0, expand=True)
+
+    # Toggles which material modifier is loaded
+    def toggle(self, name):
+        if name == "Raw Materials":
+            self.center_row.controls[0] = self.materials_modifier
+            self.materials_modifier.load_materials()
+        else:
+            self.center_row.controls[0] = self.fluid_modifier
+            self.fluid_modifier.load_materials()
+
+        self.update()
 
 # This class represents the calchelper utility
 class Calchelper(ft.UserControl):
@@ -447,7 +578,7 @@ class Calchelper(ft.UserControl):
         self.recipe_modifier = RecipeModifier(1, self)
 
         # part of the app that manages fluids and raw materials
-        self.fluid_materials_manager = FluidMaterialsManager(1)
+        self.fluid_materials_manager = FluidMaterialsManager(1, self.pack)
 
         # main part of the app
         self.main_app = ft.Container(
