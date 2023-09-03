@@ -38,10 +38,50 @@ class LaunchScreen(ft.UserControl):
 
     # confirms the selected pack
     def confirm(self, e):
-        gstate.file_name = f"packs/{self.pack_input.value}.yaml"
+        gstate.file_name = f"packs/{self.pack_input.value.lower().strip()}.yaml"
         ch.edit_configs_with_pack_name(gstate.file_name)
 
         self.page.window_close()
+
+# This class represents the screen for adding recipes
+class AddRecipesScreen(ft.UserControl):
+    def __init__(self):
+        super().__init__()
+
+    def build(self):
+        return ft.Row(visible=True, controls=[
+            ft.Text("Add Recipes")
+        ])
+
+# This class represents the screen for modifying/deleting recipes
+class ModifyRecipesScreen(ft.UserControl):
+    def __init__(self):
+        super().__init__()
+
+    def build(self):
+        return ft.Row(visible=False, controls=[
+            ft.Text("Modify Recipes")
+        ])
+
+# This class represents the screen for adding raw materials
+class AddRawMaterialsScreen(ft.UserControl):
+    def __init__(self):
+        super().__init__()
+
+    def build(self):
+        return ft.Row(visible=False, controls=[
+            ft.Text("Add Raw Materials")
+        ])
+
+# This class represents the screen for adding fluids
+class AddFluidsScreen(ft.UserControl):
+    def __init__(self):
+        super().__init__()
+
+    def build(self):
+        return ft.Row(visible=False, controls=[
+            ft.Text("Add Fluids")
+        ])
 
 # This class represents a button in the tab switcher system
 class TabSwitcherButton(ft.FilledTonalButton):
@@ -58,8 +98,10 @@ class TabSwitcherButton(ft.FilledTonalButton):
 
 # This class represents the tab system for switching between parts of the app
 class TabSwitcher(ft.UserControl):
-    def __init__(self, tab_names):
+    def __init__(self, parent, tab_names):
         super().__init__()
+
+        self.parent = parent
 
         self.tab_names = tab_names
         self.current_tab = 0
@@ -81,6 +123,8 @@ class TabSwitcher(ft.UserControl):
 
         self.update()
 
+        print(self.parent.screens)
+
     def build(self):
         self.buttons = [
             TabSwitcherButton(self, name, i, self.get_expand_amount(i)) for i, name in enumerate(self.tab_names)
@@ -99,9 +143,17 @@ class Calchelper(ft.UserControl):
 
         self.file_name = gstate.file_name
 
+        # Creates an instance of each sub-screen
+        self.screens = [
+            AddRecipesScreen(),
+            ModifyRecipesScreen(),
+            AddRawMaterialsScreen(),
+            AddFluidsScreen()
+        ]
+
     def build(self):
         # Tab switcher for this app
-        self.tab_switcher = TabSwitcher([
+        self.tab_switcher = TabSwitcher(self, [
             "Add Recipes",
             "Modify Recipes",
             "Add Raw Materials",

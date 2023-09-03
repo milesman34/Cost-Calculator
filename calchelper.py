@@ -64,19 +64,21 @@ def print_without_recipes(item):
             if len(raw_materials) > 0:
                 print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
 
-# Gets the list of raw materials
-def get_materials():
-    materials = []
+# # Gets the list of raw materials
+# def get_materials():
+#     materials = []
 
-    if "materials" in pack:
-        materials = pack["materials"]
+#     if "materials" in pack:
+#         materials = pack["materials"]
 
-        if "items" in materials:
-            materials = materials["items"]
+#         print(pack)
+
+#         if "items" in materials:
+#             materials = materials["items"]
         
-        return [" ".join(i.split(" ")[1:]) for i in materials]
-    else:
-        return []
+#         return [" ".join(i.split(" ")[1:]) for i in materials]
+#     else:
+#         return []
 
 # Saves the data
 def save_data(path):
