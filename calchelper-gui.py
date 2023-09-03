@@ -4,6 +4,14 @@ import os, yaml
 
 from utils import *
 
+# Wraps an object in a row/column combination to center it
+def center_object(obj):
+    return ft.Column([
+        ft.Row([
+            obj
+        ], expand=True, alignment=ft.MainAxisAlignment.CENTER)
+    ], expand=True, alignment=ft.MainAxisAlignment.CENTER)
+
 # This class represents some global state
 class GlobalState:
     def __init__(self):
@@ -43,98 +51,85 @@ class LaunchScreen(ft.UserControl):
 
         self.page.window_close()
 
-# This class represents the screen for adding recipes
-class AddRecipesScreen(ft.UserControl):
-    def __init__(self):
+# # This class represents a button in the tab switcher system
+# class TabSwitcherButton(ft.FilledTonalButton):
+#     def __init__(self, tab_switcher, name, index, expand):
+#         super().__init__()
+
+#         self.tab_switcher = tab_switcher
+
+#         self.index = index
+#         self.text = name
+#         self.expand = expand
+
+#         self.on_click = lambda e: self.tab_switcher.handle_click(e, self.index)
+
+# # This class represents the tab system for switching between parts of the app
+# class TabSwitcher(ft.UserControl):
+#     def __init__(self, parent, tab_names):
+#         super().__init__()
+
+#         self.parent = parent
+
+#         self.tab_names = tab_names
+#         self.current_tab = 0
+#         self.buttons = []
+
+#     # Gets the expand amount for a given indexed tab
+#     def get_expand_amount(self, index):
+#         if index == self.current_tab:
+#             return len(self.tab_names) - 1
+#         else:
+#             return 1
+
+#     # Handles a click on a button
+#     def handle_click(self, e, index):
+#         self.current_tab = index
+
+#         for i, name in enumerate(self.tab_names):
+#             self.buttons[i].expand = self.get_expand_amount(i)
+
+#         self.update()
+
+#         print(self.parent.screens)
+
+#     def build(self):
+#         self.buttons = [
+#             TabSwitcherButton(self, name, i, self.get_expand_amount(i)) for i, name in enumerate(self.tab_names)
+#         ]
+
+#         return ft.Row(
+#             self.buttons,
+#             alignment=ft.MainAxisAlignment.CENTER,
+#             spacing=5
+#         )
+
+# This class represents a button for the bottom save/quit bar
+class BottomBarButton(ft.Container):
+    def __init__(self, text, onclick):
         super().__init__()
 
-    def build(self):
-        return ft.Row(visible=True, controls=[
-            ft.Text("Add Recipes")
-        ])
+        self.content = center_object(
+            ft.Text(text, text_align=ft.TextAlign.CENTER, color=ft.colors.BLACK)
+        )
 
-# This class represents the screen for modifying/deleting recipes
-class ModifyRecipesScreen(ft.UserControl):
-    def __init__(self):
-        super().__init__()
+        self.expand = True
+        self.on_click = onclick
+        self.bgcolor = ft.colors.BLUE_300
+        self.margin = 0
 
-    def build(self):
-        return ft.Row(visible=False, controls=[
-            ft.Text("Modify Recipes")
-        ])
+        # current onhover value
+        self.on_hover = self.on_hover_event
 
-# This class represents the screen for adding raw materials
-class AddRawMaterialsScreen(ft.UserControl):
-    def __init__(self):
-        super().__init__()
-
-    def build(self):
-        return ft.Row(visible=False, controls=[
-            ft.Text("Add Raw Materials")
-        ])
-
-# This class represents the screen for adding fluids
-class AddFluidsScreen(ft.UserControl):
-    def __init__(self):
-        super().__init__()
-
-    def build(self):
-        return ft.Row(visible=False, controls=[
-            ft.Text("Add Fluids")
-        ])
-
-# This class represents a button in the tab switcher system
-class TabSwitcherButton(ft.FilledTonalButton):
-    def __init__(self, tab_switcher, name, index, expand):
-        super().__init__()
-
-        self.tab_switcher = tab_switcher
-
-        self.index = index
-        self.text = name
-        self.expand = expand
-
-        self.on_click = lambda e: self.tab_switcher.handle_click(e, self.index)
-
-# This class represents the tab system for switching between parts of the app
-class TabSwitcher(ft.UserControl):
-    def __init__(self, parent, tab_names):
-        super().__init__()
-
-        self.parent = parent
-
-        self.tab_names = tab_names
-        self.current_tab = 0
-        self.buttons = []
-
-    # Gets the expand amount for a given indexed tab
-    def get_expand_amount(self, index):
-        if index == self.current_tab:
-            return len(self.tab_names) - 1
+    # Reacts to hover events
+    def on_hover_event(self, e):
+        # we need to change the background color then
+        if e.data == "true":
+            self.bgcolor = ft.colors.BLUE_200
         else:
-            return 1
-
-    # Handles a click on a button
-    def handle_click(self, e, index):
-        self.current_tab = index
-
-        for i, name in enumerate(self.tab_names):
-            self.buttons[i].expand = self.get_expand_amount(i)
+            self.bgcolor = ft.colors.BLUE_300
 
         self.update()
-
-        print(self.parent.screens)
-
-    def build(self):
-        self.buttons = [
-            TabSwitcherButton(self, name, i, self.get_expand_amount(i)) for i, name in enumerate(self.tab_names)
-        ]
-
-        return ft.Row(
-            self.buttons,
-            alignment=ft.MainAxisAlignment.CENTER,
-            spacing=5
-        )
 
 # This class represents the calchelper utility
 class Calchelper(ft.UserControl):
@@ -142,33 +137,83 @@ class Calchelper(ft.UserControl):
         super().__init__()
 
         self.file_name = gstate.file_name
-
-        # Creates an instance of each sub-screen
-        self.screens = [
-            AddRecipesScreen(),
-            ModifyRecipesScreen(),
-            AddRawMaterialsScreen(),
-            AddFluidsScreen()
-        ]
+        self.expand = True
 
     def build(self):
-        # Tab switcher for this app
-        self.tab_switcher = TabSwitcher(self, [
-            "Add Recipes",
-            "Modify Recipes",
-            "Add Raw Materials",
-            "Add Fluids"
-        ])
-
-        return ft.Column(
-            controls=[
-                self.tab_switcher
-            ]
+        # main part of the app
+        self.main_app = ft.Container(
+            content=ft.Row([
+                ft.Text("test")
+            ], expand=True),
+            bgcolor=ft.colors.BLUE,
+            expand=14
         )
 
-    # Runs whenever the tab is changed
-    def on_tab_changed(self, e):
-        pass
+        # save/quit buttons
+        self.save_quit_area = ft.Container(
+            content=ft.Row([
+                BottomBarButton("Save", self.save_clicked),
+                BottomBarButton("Quit", self.quit_clicked)
+            ], expand=True, spacing=0),
+            expand=1,
+            bgcolor=ft.colors.RED,
+            margin=0,
+            padding=0
+        )
+
+        self.view = ft.Container(
+            # content=ft.Column([
+            #     # main information
+            #     ft.Row(controls=[
+            #         # main part
+            #         ft.Column(controls=[
+            #             # main information
+            #             ft.Row(controls=[
+            #                 ft.Text("Main")
+            #             ], expand=4),
+
+            #             ft.Row([
+            #                 ft.Column(controls=[
+            #                     ft.Text("Check or delete recipes", text_align=ft.TextAlign.CENTER, size=20)
+            #                 ])
+            #             ], expand=1, alignment=ft.MainAxisAlignment.CENTER)
+            #         ], expand=4),
+
+            #         # fluids and raw materials
+            #         ft.Column(controls=[
+            #             ft.Text("Fluids")
+            #         ], expand=1)
+            #     ], expand=19),
+
+            #     # save/quit buttons
+            #     ft.Row(controls=[
+            #         ft.FilledTonalButton(text="Save", style=ft.ButtonStyle(
+            #             shape=ft.RoundedRectangleBorder(radius=0)
+            #         ), width=150, on_click=self.save_clicked),
+            #         ft.FilledTonalButton(text="Quit", style=ft.ButtonStyle(
+            #             shape=ft.RoundedRectangleBorder(radius=0)
+            #         ), width=150, on_click=self.quit_clicked)
+            #     ], expand=1, spacing=50, alignment=ft.MainAxisAlignment.CENTER)
+            # ], expand=True),
+            content=ft.Column(controls=[
+                        self.main_app,
+                        self.save_quit_area
+                    ], expand=True, spacing=0),
+            bgcolor=ft.colors.BLUE_GREY,
+            margin=0,
+            padding=0,
+            expand=True
+        )
+        
+        return self.view
+
+    # on save button clicked
+    def save_clicked(self, e):
+        print(f"Saved to {self.file_name}")
+
+    # on quit button clicked
+    def quit_clicked(self, e):
+        print("Quitting")
 
 # This screen handles deciding what pack to work with
 def launch_screen(page):
@@ -184,6 +229,8 @@ def launch_screen(page):
 # This screen handles recipe creation
 def recipe_screen(page):
     page.title = f"Editing {gstate.file_name}"
+    page.padding = 0
+    page.expand = True
 
     calchelper = Calchelper()
 
