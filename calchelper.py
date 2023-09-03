@@ -81,9 +81,11 @@ def print_without_recipes(item):
 #         return []
 
 # Saves the data
-def save_data(path):
+def save_data(path, _pack=None):
+    _pack = pack if _pack is None else _pack
+
     with open(path, "w+") as f:
-        for item, recipe in pack.get_recipes_iterable():
+        for item, recipe in _pack.get_recipes_iterable():
             f.write(f"{item}:\n")
 
             if recipe.get_amount_produced() > 1:

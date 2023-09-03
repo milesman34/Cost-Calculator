@@ -217,7 +217,8 @@ class RecipeInputTextField(ft.TextField):
 
 # This class represents a recipe output
 class RecipeOutputItem(ft.Container):
-    def __init__(self, item_name, pack, config):
+    # is_checked says if the output item was created when checking recipes
+    def __init__(self, item_name, pack, config, is_checked=False):
         super().__init__()
         self.margin = 0
         
@@ -226,7 +227,8 @@ class RecipeOutputItem(ft.Container):
         itemstack = recipe.get_output_itemstack()
         inputs_repr = recipe.get_input_repr()
 
-        print(inputs_repr)
+        if not is_checked:
+            self.border = ft.border.only(top=ft.border.BorderSide(1, "black"))
 
         self.content = ft.Column([
             ft.Row([
@@ -258,34 +260,55 @@ class RecipeOutputItem(ft.Container):
             if len(missing_items) > 0 or len(raw_materials) > 0:
                 self.content.controls.append(ft.Row([ft.Text(f"Missing Recipes for {', '.join(sorted(missing_items + raw_materials))}", size=16, color=ft.colors.BLACK, expand=True)]))
 
+
+# Creates a bordered container text
+def border_container_text(text):
+    return ft.Container(ft.Row([
+        ft.Text(text, color=ft.colors.BLACK)
+    ]), border=ft.border.only(top=ft.border.BorderSide(1, "black")))
+
 # This class represents the recipe output area
 class RecipeOutput(ft.Container):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
 
         self.expand = 4
         self.padding = 10
 
+        self.config = config
+
         self.content = ft.Column([
         ], expand=True, scroll=ft.ScrollMode.AUTO)
 
     # Displays a recipe
-    def display_recipe(self, item_name, pack, config):
-        self.content.controls.insert(0, RecipeOutputItem(item_name, pack, config))
+    def display_recipe(self, item_name, pack, is_checked=False):
+        self.content.controls.insert(0, RecipeOutputItem(item_name, pack, self.config, is_checked))
+
+        self.update()
+
+    # Checks a recipe
+    def check_recipe(self, item_name, pack):
+        if pack.has_recipe(item_name):
+            self.display_recipe(item_name, pack, True)
+
+            self.content.controls.insert(0, border_container_text(f"A recipe for {item_name} exists!"))
+        else:
+            self.content.controls.insert(0, border_container_text(f"No recipe for {item_name} exists!"))
 
         self.update()
 
 # This class represents the part of the program which adds recipes
 class RecipeAdder(ft.Container):
-    def __init__(self, expand, parent):
+    def __init__(self, expand, parent, config):
         super().__init__()
 
         self.expand = expand
         self.parent = parent
         self.margin = 0
+        self.config = config
 
         self.recipe_text_field = RecipeInputTextField(parent)
-        self.recipe_output = RecipeOutput()
+        self.recipe_output = RecipeOutput(self.config)
 
         self.content = ft.Column([
             self.recipe_output,
@@ -302,19 +325,27 @@ class RecipeAdder(ft.Container):
     def create_recipe(self, output, inputs):
         self.parent.create_recipe(output, inputs)
 
-    def display_recipe(self, item_name, pack, config):
-        self.recipe_output.display_recipe(item_name, pack, config)
+    def display_recipe(self, item_name, pack):
+        self.recipe_output.display_recipe(item_name, pack)
+
+    def check_recipe(self, item_name, pack):
+        self.recipe_output.check_recipe(item_name, pack)
 
 # This class represents the part of the program which checks or deletes recipes
 class RecipeModifier(ft.Container):
-    def __init__(self, expand):
+    def __init__(self, expand, parent):
         super().__init__()
 
         self.expand = expand
+        self.parent = parent
 
         self.margin = 0
 
         self.bgcolor = ft.colors.LIGHT_BLUE
+
+        self.text_field = ft.TextField(label="Enter item", width=200, color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
+                    color=ft.colors.BLACK
+                ), on_submit=self.check_recipe)
 
         self.content = ft.Column([
             wrap_expand(center_object(ft.Text("Check or Delete Recipes", color=ft.colors.BLACK, size=18)), 1),
@@ -322,11 +353,9 @@ class RecipeModifier(ft.Container):
             wrap_expand(ft.Row([
                 wrap_expand(None, 1),
 
-                ft.FloatingActionButton(icon=ft.icons.SEARCH_ROUNDED, bgcolor=ft.colors.GREY, shape=ft.RoundedRectangleBorder(radius=0)),
+                ft.FloatingActionButton(icon=ft.icons.SEARCH_ROUNDED, bgcolor=ft.colors.GREY, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.check_recipe),
 
-                center_object(ft.Container(ft.TextField(label="Enter item", width=200, color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
-                    color=ft.colors.BLACK
-                )), expand=True, margin=20)),
+                center_object(ft.Container(self.text_field, expand=True, margin=20)),
 
                 ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0)),
 
@@ -334,6 +363,12 @@ class RecipeModifier(ft.Container):
             ], expand=True), 3)
             
         ], expand=True, spacing=0)
+
+    # Checks the contents of a recipe
+    def check_recipe(self, e):
+        self.parent.check_recipe(self.text_field.value.strip())
+        self.text_field.value = ""
+        self.text_field.focus()
 
 # This class represents the part of the program which manages fluids and raw materials
 class FluidMaterialsManager(ft.Container):
@@ -347,8 +382,10 @@ class FluidMaterialsManager(ft.Container):
 
 # This class represents the calchelper utility
 class Calchelper(ft.UserControl):
-    def __init__(self):
+    def __init__(self, page):
         super().__init__()
+
+        self.page = page
 
         self.file_name = gstate.file_name
         self.expand = True
@@ -363,8 +400,12 @@ class Calchelper(ft.UserControl):
         self.items_with_new_recipes = set()
 
     # Displays a recipe
-    def display_recipe(self, item_name, pack, config):
-        self.recipe_adder.display_recipe(item_name, pack, config)
+    def display_recipe(self, item_name, pack):
+        self.recipe_adder.display_recipe(item_name, pack)
+
+    # Checks a recipe
+    def check_recipe(self, item_name):
+        self.recipe_adder.check_recipe(item_name, self.pack)
 
     # Creates a recipe
     def create_recipe(self, output, inputs):
@@ -377,14 +418,14 @@ class Calchelper(ft.UserControl):
         self.items_with_new_recipes.add(item_name)
 
         # Now display the recipe
-        self.display_recipe(item_name, self.pack, self.app_config)
+        self.display_recipe(item_name, self.pack)
 
     def build(self):
         # part of the app that manages adding recipes
-        self.recipe_adder = RecipeAdder(4, self)
+        self.recipe_adder = RecipeAdder(4, self, self.app_config)
 
         # part of the app that checks/deletes recipes
-        self.recipe_modifier = RecipeModifier(1)
+        self.recipe_modifier = RecipeModifier(1, self)
 
         # part of the app that manages fluids and raw materials
         self.fluid_materials_manager = FluidMaterialsManager(1)
@@ -412,7 +453,6 @@ class Calchelper(ft.UserControl):
         self.save_quit_area = ft.Container(
             content=ft.Row([
                 BottomBarButton("Save", self.save_clicked),
-                BottomBarButton("Quit", self.quit_clicked)
             ], expand=True, spacing=0),
             expand=1,
             bgcolor=ft.colors.RED,
@@ -421,39 +461,6 @@ class Calchelper(ft.UserControl):
         )
 
         self.view = ft.Container(
-            # content=ft.Column([
-            #     # main information
-            #     ft.Row(controls=[
-            #         # main part
-            #         ft.Column(controls=[
-            #             # main information
-            #             ft.Row(controls=[
-            #                 ft.Text("Main")
-            #             ], expand=4),
-
-            #             ft.Row([
-            #                 ft.Column(controls=[
-            #                     ft.Text("Check or delete recipes", text_align=ft.TextAlign.CENTER, size=20)
-            #                 ])
-            #             ], expand=1, alignment=ft.MainAxisAlignment.CENTER)
-            #         ], expand=4),
-
-            #         # fluids and raw materials
-            #         ft.Column(controls=[
-            #             ft.Text("Fluids")
-            #         ], expand=1)
-            #     ], expand=19),
-
-            #     # save/quit buttons
-            #     ft.Row(controls=[
-            #         ft.FilledTonalButton(text="Save", style=ft.ButtonStyle(
-            #             shape=ft.RoundedRectangleBorder(radius=0)
-            #         ), width=150, on_click=self.save_clicked),
-            #         ft.FilledTonalButton(text="Quit", style=ft.ButtonStyle(
-            #             shape=ft.RoundedRectangleBorder(radius=0)
-            #         ), width=150, on_click=self.quit_clicked)
-            #     ], expand=1, spacing=50, alignment=ft.MainAxisAlignment.CENTER)
-            # ], expand=True),
             content=ft.Column(controls=[
                         self.main_app,
                         self.save_quit_area
@@ -468,11 +475,19 @@ class Calchelper(ft.UserControl):
 
     # on save button clicked
     def save_clicked(self, e):
+        ch.save_data(self.file_name, self.pack)
         print(f"Saved to {self.file_name}")
 
-    # on quit button clicked
-    def quit_clicked(self, e):
-        print("Quitting")
+    # # on save and quit button clicked
+    # def save_quit_clicked(self, e):
+    #     self.save_clicked(e)
+    #     self.quit_clicked(e)
+    #     self.page.window_close()
+
+    # # on quit button clicked
+    # def quit_clicked(self, e):
+    #     print("Quitting")
+    #     self.page.window_close()
 
 # This screen handles deciding what pack to work with
 def launch_screen(page):
@@ -488,7 +503,7 @@ def launch_screen(page):
 # This screen handles recipe creation
 def recipe_screen(page):
     page.window_center()
-    calchelper = Calchelper()
+    calchelper = Calchelper(page)
 
     page.title = f"Editing {gstate.file_name}"
     page.padding = 0
