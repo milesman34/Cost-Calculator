@@ -142,9 +142,6 @@ if __name__ == "__main__":
     # Gets the yaml file
     pack = load_pack_config(file_name)
 
-    # set of items which got new recipes
-    items_with_new_recipes = set()
-
     while True:
         # Gets the item to be produced
         output = input("output: ").strip()
@@ -167,9 +164,6 @@ if __name__ == "__main__":
                 pack.delete_recipe(item)
 
                 print(f"Entry {item} deleted!\n")
-
-                if item in items_with_new_recipes:
-                    items_with_new_recipes.remove(item)
             else:
                 print(f"Entry {item} not found!\n")
 
@@ -235,9 +229,6 @@ if __name__ == "__main__":
 
         # Sets the recipe for the pack
         pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, parsed_inputs))
-
-        # Adds to the list of items with new recipes
-        items_with_new_recipes.add(item_name)
 
         # Prints the items that don't have recipes
         print_without_recipes(item_name)

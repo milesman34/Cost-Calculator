@@ -297,6 +297,15 @@ class RecipeOutput(ft.Container):
 
         self.update()
 
+    # Displays text for deleting a recipe
+    def delete_recipe(self, item_name, exists):
+        if exists:
+            self.content.controls.insert(0, border_container_text(f"Deleted the recipe for {item_name}!"))
+        else:
+            self.content.controls.insert(0, border_container_text(f"No recipe for {item_name} exists!"))
+
+        self.update()
+
 # This class represents the part of the program which adds recipes
 class RecipeAdder(ft.Container):
     def __init__(self, expand, parent, config):
@@ -331,6 +340,9 @@ class RecipeAdder(ft.Container):
     def check_recipe(self, item_name, pack):
         self.recipe_output.check_recipe(item_name, pack)
 
+    def delete_recipe(self, item_name, exists):
+        self.recipe_output.delete_recipe(item_name, exists)
+
 # This class represents the part of the program which checks or deletes recipes
 class RecipeModifier(ft.Container):
     def __init__(self, expand, parent):
@@ -357,7 +369,7 @@ class RecipeModifier(ft.Container):
 
                 center_object(ft.Container(self.text_field, expand=True, margin=20)),
 
-                ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0)),
+                ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.delete_recipe),
 
                 wrap_expand(None, 1)
             ], expand=True), 3)
@@ -367,6 +379,12 @@ class RecipeModifier(ft.Container):
     # Checks the contents of a recipe
     def check_recipe(self, e):
         self.parent.check_recipe(self.text_field.value.strip())
+        self.text_field.value = ""
+        self.text_field.focus()
+
+    # Deletes a recipe
+    def delete_recipe(self, e):
+        self.parent.delete_recipe(self.text_field.value.strip())
         self.text_field.value = ""
         self.text_field.focus()
 
@@ -396,9 +414,6 @@ class Calchelper(ft.UserControl):
         # Gets the yaml file
         self.pack = load_pack_config(self.file_name)
 
-        # set of items which got new recipes
-        self.items_with_new_recipes = set()
-
     # Displays a recipe
     def display_recipe(self, item_name, pack):
         self.recipe_adder.display_recipe(item_name, pack)
@@ -407,15 +422,19 @@ class Calchelper(ft.UserControl):
     def check_recipe(self, item_name):
         self.recipe_adder.check_recipe(item_name, self.pack)
 
+    # Deletes a recipe
+    def delete_recipe(self, item_name):
+        self.recipe_adder.delete_recipe(item_name, self.pack.has_recipe(item_name))
+
+        if self.pack.has_recipe(item_name):
+            self.pack.delete_recipe(item_name)
+
     # Creates a recipe
     def create_recipe(self, output, inputs):
         item_name = output.get_item_name()
 
         # Sets the recipe for the pack
         self.pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, inputs))
-
-        # Adds to the list of items with new recipes
-        self.items_with_new_recipes.add(item_name)
 
         # Now display the recipe
         self.display_recipe(item_name, self.pack)
