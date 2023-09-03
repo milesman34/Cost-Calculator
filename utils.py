@@ -218,7 +218,11 @@ class CraftingRecipe:
         self.depth = 0
 
     def __repr__(self):
-        return f"{self.produces} {self.output}: {', '.join([str(i) for i in sorted(self.inputs, key=lambda i: i.get_item_name())])}"
+        return f"{self.produces} {self.output}: {self.get_input_repr()}"
+
+    # Gets a sorted representation of the inputs
+    def get_input_repr(self):
+        return ", ".join([str(i) for i in sorted(self.inputs, key=lambda i: i.get_item_name())])
 
     # Gets a set of all item types needed
     def get_item_types(self):
@@ -235,6 +239,10 @@ class CraftingRecipe:
     # Gets how much of the item the recipe produces
     def get_amount_produced(self):
         return self.produces
+
+    # Gets an itemstack for the output
+    def get_output_itemstack(self):
+        return ItemStack(self.output, self.produces)
 
     # Creates a recipe using the output ItemStack and inputs
     def create_with_itemstack(output, inputs):

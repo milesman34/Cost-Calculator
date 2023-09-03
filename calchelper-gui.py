@@ -1,8 +1,12 @@
 import flet as ft
 import calchelper as ch
-import os, yaml
+import os, re, yaml
 
 from utils import *
+
+# Wraps an object in a container with an expand entry
+def wrap_expand(obj, exp):
+    return ft.Container(obj, expand=exp)
 
 # Wraps an object in a row/column combination to center it
 def center_object(obj):
@@ -11,6 +15,31 @@ def center_object(obj):
             obj
         ], expand=True, alignment=ft.MainAxisAlignment.CENTER)
     ], expand=True, alignment=ft.MainAxisAlignment.CENTER)
+
+# Modified version of get_all_raw_materials for this program
+def get_all_raw_materials(_item, pack):
+    cache = {}
+
+    def get_all_raw_materials2(item):
+        try:
+            if item not in cache:
+                result = set()
+
+                if pack.has_recipe(item):
+                    for item2 in pack.get_recipe(item).get_item_types():
+                        result.update(get_all_raw_materials2(item2))
+                else:
+                    result.add(item)
+
+                cache[item] = result
+                return result
+            else:
+                return cache[item]
+        except:
+            print(f"RecursionError with item {item}")
+            return set()
+
+    return get_all_raw_materials2(_item)
 
 # This class represents some global state
 class GlobalState:
@@ -131,6 +160,191 @@ class BottomBarButton(ft.Container):
 
         self.update()
 
+# This class represents the recipe input text field
+class RecipeInputTextField(ft.TextField):
+    def __init__(self, parent):
+        super().__init__()
+
+        self.expand = 2
+
+        self.parent = parent
+
+        self.label = "Enter Output"
+
+        self.color = ft.colors.BLACK
+        self.focused_color = ft.colors.BLACK
+        self.cursor_color = ft.colors.BLACK
+        self.border_color = ft.colors.BLACK
+        
+        self.label_style = ft.TextStyle(
+            color=ft.colors.BLACK
+        )
+
+        self.on_submit = self.on_submit_fn
+
+        # track the current output
+        self.output_item = ""
+
+    # Function that runs when the button is submitted
+    def on_submit_fn(self, e):
+        value = self.value.strip()
+
+        if value == "":
+            self.focus()
+            return
+
+        # print("Submitted", value)
+
+        if self.label == "Enter Output":
+            # get the output item from the text box
+            self.output_item = make_item_stack(self.value)
+
+            self.label = f"Enter Inputs for {self.output_item.get_item_name()}"
+        else:
+            self.label = "Enter Output"
+
+            # get the input items from the textbox
+            self.create_recipe(self.output_item, [i for i in [make_item_stack(i) for i in re.split(", *", self.value)] if i.get_item_name() != ""])
+
+        self.value = ""
+        self.focus()
+
+        self.update()
+
+    # Creates a recipe
+    def create_recipe(self, output, inputs):
+        self.parent.create_recipe(output, inputs)
+
+# This class represents a recipe output
+class RecipeOutputItem(ft.Container):
+    def __init__(self, item_name, pack, config):
+        super().__init__()
+        self.margin = 0
+        
+        # Gets the recipe
+        recipe = pack.get_recipe(item_name)
+        itemstack = recipe.get_output_itemstack()
+        inputs_repr = recipe.get_input_repr()
+
+        print(inputs_repr)
+
+        self.content = ft.Column([
+            ft.Row([
+                ft.Text(f"Produces {itemstack}", size=20, color=ft.colors.BLACK, expand=True)
+            ]),
+
+            ft.Row([
+                ft.Text(f"Uses {inputs_repr}", size=16, color=ft.colors.BLACK, expand=True)
+            ])
+        ])
+
+        # Adds the items included in parts of the recipe which do not have recipes
+        if config.should_print_items_without_recipes():
+            # All items used in the recipe
+            unique_items = recipe.get_item_types()
+
+            # The raw materials of the pack
+            materials = pack.get_raw_materials()
+
+            missing_items = [item2 for item2 in sorted(unique_items) if not (pack.has_recipe(item2) or item2 in materials)]
+            raw_materials = []
+
+            # The raw materials to be displayed are not included in the missing elements
+            if config.should_display_raw_materials():
+                # Remove items already included in the recipe
+                raw_materials = [mat for mat in get_all_raw_materials(item_name, pack).difference(unique_items) if (not mat in materials) and mat != item_name]
+
+            # Now display the missing items
+            if len(missing_items) > 0 or len(raw_materials) > 0:
+                self.content.controls.append(ft.Row([ft.Text(f"Missing Recipes for {', '.join(sorted(missing_items + raw_materials))}", size=16, color=ft.colors.BLACK, expand=True)]))
+
+# This class represents the recipe output area
+class RecipeOutput(ft.Container):
+    def __init__(self):
+        super().__init__()
+
+        self.expand = 4
+        self.padding = 10
+
+        self.content = ft.Column([
+        ], expand=True, scroll=ft.ScrollMode.AUTO)
+
+    # Displays a recipe
+    def display_recipe(self, item_name, pack, config):
+        self.content.controls.insert(0, RecipeOutputItem(item_name, pack, config))
+
+        self.update()
+
+# This class represents the part of the program which adds recipes
+class RecipeAdder(ft.Container):
+    def __init__(self, expand, parent):
+        super().__init__()
+
+        self.expand = expand
+        self.parent = parent
+        self.margin = 0
+
+        self.recipe_text_field = RecipeInputTextField(parent)
+        self.recipe_output = RecipeOutput()
+
+        self.content = ft.Column([
+            self.recipe_output,
+
+            wrap_expand(ft.Row([
+                wrap_expand(None, 1),
+
+                self.recipe_text_field,
+
+                wrap_expand(None, 1)
+            ], expand=True, spacing=0), 1)
+        ], expand=True, spacing=0)
+
+    def create_recipe(self, output, inputs):
+        self.parent.create_recipe(output, inputs)
+
+    def display_recipe(self, item_name, pack, config):
+        self.recipe_output.display_recipe(item_name, pack, config)
+
+# This class represents the part of the program which checks or deletes recipes
+class RecipeModifier(ft.Container):
+    def __init__(self, expand):
+        super().__init__()
+
+        self.expand = expand
+
+        self.margin = 0
+
+        self.bgcolor = ft.colors.LIGHT_BLUE
+
+        self.content = ft.Column([
+            wrap_expand(center_object(ft.Text("Check or Delete Recipes", color=ft.colors.BLACK, size=18)), 1),
+
+            wrap_expand(ft.Row([
+                wrap_expand(None, 1),
+
+                ft.FloatingActionButton(icon=ft.icons.SEARCH_ROUNDED, bgcolor=ft.colors.GREY, shape=ft.RoundedRectangleBorder(radius=0)),
+
+                center_object(ft.Container(ft.TextField(label="Enter item", width=200, color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
+                    color=ft.colors.BLACK
+                )), expand=True, margin=20)),
+
+                ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0)),
+
+                wrap_expand(None, 1)
+            ], expand=True), 3)
+            
+        ], expand=True, spacing=0)
+
+# This class represents the part of the program which manages fluids and raw materials
+class FluidMaterialsManager(ft.Container):
+    def __init__(self, expand):
+        super().__init__()
+
+        self.expand = expand
+        self.margin = 0
+
+        self.bgcolor = ft.colors.BLUE_700
+
 # This class represents the calchelper utility
 class Calchelper(ft.UserControl):
     def __init__(self):
@@ -139,14 +353,59 @@ class Calchelper(ft.UserControl):
         self.file_name = gstate.file_name
         self.expand = True
 
+        # Loads the main app config file
+        self.app_config = load_main_config()
+
+        # Gets the yaml file
+        self.pack = load_pack_config(self.file_name)
+
+        # set of items which got new recipes
+        self.items_with_new_recipes = set()
+
+    # Displays a recipe
+    def display_recipe(self, item_name, pack, config):
+        self.recipe_adder.display_recipe(item_name, pack, config)
+
+    # Creates a recipe
+    def create_recipe(self, output, inputs):
+        item_name = output.get_item_name()
+
+        # Sets the recipe for the pack
+        self.pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, inputs))
+
+        # Adds to the list of items with new recipes
+        self.items_with_new_recipes.add(item_name)
+
+        # Now display the recipe
+        self.display_recipe(item_name, self.pack, self.app_config)
+
     def build(self):
+        # part of the app that manages adding recipes
+        self.recipe_adder = RecipeAdder(4, self)
+
+        # part of the app that checks/deletes recipes
+        self.recipe_modifier = RecipeModifier(1)
+
+        # part of the app that manages fluids and raw materials
+        self.fluid_materials_manager = FluidMaterialsManager(1)
+
         # main part of the app
         self.main_app = ft.Container(
             content=ft.Row([
-                ft.Text("test")
-            ], expand=True),
+                ft.Container(
+                    content=ft.Column([
+                        self.recipe_adder,
+                        self.recipe_modifier
+                    ], expand=True),
+                    expand=4
+                ),
+
+                self.fluid_materials_manager
+            ], expand=True, spacing=0),
             bgcolor=ft.colors.BLUE,
-            expand=14
+            expand=14,
+            margin=0,
+            padding=0
         )
 
         # save/quit buttons
@@ -228,11 +487,13 @@ def launch_screen(page):
 
 # This screen handles recipe creation
 def recipe_screen(page):
+    page.window_center()
+    calchelper = Calchelper()
+
     page.title = f"Editing {gstate.file_name}"
     page.padding = 0
     page.expand = True
-
-    calchelper = Calchelper()
+    page.theme_mode = ft.ThemeMode.DARK
 
     page.add(calchelper)
 
