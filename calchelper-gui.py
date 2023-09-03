@@ -175,6 +175,9 @@ class RecipeInputTextField(ft.TextField):
         self.focused_color = ft.colors.BLACK
         self.cursor_color = ft.colors.BLACK
         self.border_color = ft.colors.BLACK
+
+        self.suffix_style = ft.TextStyle(color=ft.colors.BLACK)
+        self.suffix_text = ""
         
         self.label_style = ft.TextStyle(
             color=ft.colors.BLACK
@@ -184,6 +187,18 @@ class RecipeInputTextField(ft.TextField):
 
         # track the current output
         self.output_item = ""
+
+        self.on_change = self.on_change_fn
+
+        # Generate the trie based on the pack
+        self.pack = self.parent.pack
+
+        self.trie = {}
+
+    # Function that runs when the text input is changed
+    def on_change_fn(self, e):
+        self.suffix_text = str(len(self.value.strip()))
+        self.update()
 
     # Function that runs when the button is submitted
     def on_submit_fn(self, e):
