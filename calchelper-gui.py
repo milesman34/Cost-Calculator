@@ -37,6 +37,8 @@ def get_all_raw_materials(_item, pack):
                 return cache[item]
         except:
             print(f"RecursionError with item {item}")
+            gstate.recursion_error = True
+            gstate.recursion_item = item
             return set()
 
     return get_all_raw_materials2(_item)
@@ -45,6 +47,10 @@ def get_all_raw_materials(_item, pack):
 class GlobalState:
     def __init__(self):
         self.file_name = ""
+
+        # Was a recursion error committed?
+        self.recursion_error = False
+        self.recursion_item = None
 
 gstate = GlobalState()
 
@@ -190,14 +196,54 @@ class RecipeInputTextField(ft.TextField):
 
         self.on_change = self.on_change_fn
 
+        self.on_blur = self.turn_off_focus
+        self.on_focus = self.turn_on_focus
+
+        # is the text field currently focused
+        self.focused = False
+
         # Generate the trie based on the pack
         self.pack = self.parent.pack
 
-        self.trie = {}
+        self.trie = Trie()
+
+        for item, recipe in self.pack.items.items():
+            # Start with the words from the output item
+            for word in item.split(" "):
+                self.trie.add_word(word)
+
+            # Now get the words from the input items
+            for item in recipe.get_inputs():
+                for word in item.get_item_name().split(" "):
+                    self.trie.add_word(word)
+
+    # Finds the index to use for auto-complete
+    def auto_complete_index(self, value):
+        index = len(value) - 1
+
+        while index >= 0:
+            if value[index] in " ":
+                break
+            
+            index -= 1
+
+        return index + 1
 
     # Function that runs when the text input is changed
     def on_change_fn(self, e):
-        self.suffix_text = str(len(self.value.strip()))
+        value = self.value
+
+        if len(value) == 0:
+            self.suffix_text = ""
+        else:
+            index = self.auto_complete_index(value)
+
+            tmp_word = value[index:].strip()
+
+            if tmp_word == "":
+                self.suffix_text = ""
+            else:
+                self.suffix_text = self.trie.predict_word(tmp_word)
         self.update()
 
     # Function that runs when the button is submitted
@@ -212,16 +258,26 @@ class RecipeInputTextField(ft.TextField):
 
         if self.label == "Enter Output":
             # get the output item from the text box
-            self.output_item = make_item_stack(self.value)
+            self.output_item = make_item_stack(self.value.lower().strip())
 
             self.label = f"Enter Inputs for {self.output_item.get_item_name()}"
         else:
             self.label = "Enter Output"
 
             # get the input items from the textbox
-            self.create_recipe(self.output_item, [i for i in [make_item_stack(i) for i in re.split(", *", self.value)] if i.get_item_name() != ""])
+            inputs = [i for i in [make_item_stack(i) for i in re.split(", *", self.value)] if i.get_item_name() != ""]
+
+            self.create_recipe(self.output_item, inputs)
+
+            for word in self.output_item.get_item_name().split(" "):
+                self.trie.add_word(word)
+
+            for item in inputs:
+                for word in item.get_item_name().split(" "):
+                    self.trie.add_word(word)
 
         self.value = ""
+        self.suffix_text = ""
         self.focus()
 
         self.update()
@@ -229,6 +285,31 @@ class RecipeInputTextField(ft.TextField):
     # Creates a recipe
     def create_recipe(self, output, inputs):
         self.parent.create_recipe(output, inputs)
+
+    # Runs on tab press
+    def on_tab_press(self):
+        if self.focused:
+            if self.suffix_text == "":
+                if len(self.value) > 0:
+                    self.focus()
+                    
+                return
+
+            # let's find the index to replace
+            index = self.auto_complete_index(self.value)
+
+            self.value = self.value[:index] + self.suffix_text
+
+            self.focus()
+            self.update()
+
+    # Turns on the focused variable
+    def turn_on_focus(self, e):
+        self.focused = True
+
+    # Turns off the focused variable
+    def turn_off_focus(self, e):
+        self.focused = False
 
 # This class represents a recipe output
 class RecipeOutputItem(ft.Container):
@@ -270,6 +351,12 @@ class RecipeOutputItem(ft.Container):
             if config.should_display_raw_materials():
                 # Remove items already included in the recipe
                 raw_materials = [mat for mat in get_all_raw_materials(item_name, pack).difference(unique_items) if (not mat in materials) and mat != item_name]
+
+                if gstate.recursion_error:
+                    self.content.controls.append(ft.Row([ft.Text(f"Recipe loop found with item {gstate.recursion_item}!", size=16, color=ft.colors.BLACK, expand=True)]))
+
+                    gstate.recursion_error = False
+                    gstate.recursion_item = None
 
             # Now display the missing items
             if len(missing_items) > 0 or len(raw_materials) > 0:
@@ -483,6 +570,7 @@ class FluidMaterialsModifier(ft.Container):
             self.pack.add_ae2_fluid(name)
 
         self.text_field.value = ""
+        self.text_field.focus()
         
         self.load_materials()
         self.update()
@@ -507,6 +595,7 @@ class FluidMaterialsModifier(ft.Container):
                 mats.inputs = [i for i in mats.inputs if i.get_item_name() != name]
 
         self.text_field.value = ""
+        self.text_field.focus()
         
         self.load_materials()
         self.update()
@@ -643,6 +732,10 @@ class Calchelper(ft.UserControl):
         ch.save_data(self.file_name, self.pack)
         print(f"Saved to {self.file_name}")
 
+    # Runs the on-tab-pressed event for autocomplete
+    def on_tab_press(self):
+        self.recipe_adder.recipe_text_field.on_tab_press()
+
     # # on save and quit button clicked
     # def save_quit_clicked(self, e):
     #     self.save_clicked(e)
@@ -669,6 +762,12 @@ def launch_screen(page):
 def recipe_screen(page):
     page.window_center()
     calchelper = Calchelper(page)
+
+    def on_keyboard(e):
+        if e.key == "Tab":
+            calchelper.on_tab_press()
+
+    page.on_keyboard_event = on_keyboard
 
     page.title = f"Editing {gstate.file_name}"
     page.padding = 0

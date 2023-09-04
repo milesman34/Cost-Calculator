@@ -338,6 +338,9 @@ class Trie:
         if ch not in self.characters:
             return ""
         else:
+            if self.characters[ch][1] is None:
+                return ch
+
             nxt = self.characters[ch][1].predict_word(word[1:])
 
             if nxt == "":
@@ -345,14 +348,5 @@ class Trie:
             else:
                 return ch + nxt
             
-
     def __repr__(self):
         return ", ".join([f"{k}: {v}" for k, v in self.characters.items()])
-
-trie = Trie()
-
-for word in "A good example of a paragraph contains a topic sentence, details and a conclusion. 'There are many different kinds of animals that live in China. Tigers and leopards are animals that live in China's forests in the north. In the jungles, monkeys swing in the trees and elephants walk through the brush".split(" "):
-    trie.add_word(word)
-
-for c in "abcdefghijklmnopqrstuvwxyz":
-    print(c, trie.predict_word(c))
