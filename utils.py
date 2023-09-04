@@ -218,7 +218,11 @@ class CraftingRecipe:
         self.depth = 0
 
     def __repr__(self):
-        return f"{self.produces} {self.output}: {', '.join([str(i) for i in sorted(self.inputs, key=lambda i: i.get_item_name())])}"
+        return f"{self.produces} {self.output}: {self.get_input_repr()}"
+
+    # Gets a sorted representation of the inputs
+    def get_input_repr(self):
+        return ", ".join([str(i) for i in sorted(self.inputs, key=lambda i: i.get_item_name())])
 
     # Gets a set of all item types needed
     def get_item_types(self):
@@ -235,6 +239,10 @@ class CraftingRecipe:
     # Gets how much of the item the recipe produces
     def get_amount_produced(self):
         return self.produces
+
+    # Gets an itemstack for the output
+    def get_output_itemstack(self):
+        return ItemStack(self.output, self.produces)
 
     # Creates a recipe using the output ItemStack and inputs
     def create_with_itemstack(output, inputs):
@@ -288,3 +296,57 @@ def make_item_stack(string: str):
         return ItemStack(get_remaining_words(string), int(amount))
     else:
         return ItemStack(string, 1)
+
+# This Trie powers the auto-complete system
+class Trie:
+    def __init__(self):
+        # it will have a dict of characters which map to the amount of times that character appeared in that position, as well as either another Trie or None
+        self.characters = {}
+
+    def add_word(self, word):
+        # this is recursive and uses multiple tries, so we start with the base case
+        ch = word[0]
+
+        if len(word) == 1:
+            if ch in self.characters:
+                self.characters[ch] = (self.characters[ch][0] + 1, self.characters[ch][1])
+            else:
+                self.characters[ch] = (1, None)
+        else:
+            if ch in self.characters:
+                new_amt = self.characters[ch][0] + 1
+                new_trie = Trie() if self.characters[ch][1] is None else self.characters[ch][1]
+                new_trie.add_word(word[1:])
+                self.characters[ch] = (new_amt, new_trie)
+            else:
+                new_trie = Trie()
+                new_trie.add_word(word[1:])
+                self.characters[ch] = (1, new_trie)
+
+    # This now attempts to predict a word based on the given text
+    def predict_word(self, word):
+        if len(word) == 0:
+            mx = max(self.characters.items(), key=lambda n: n[1][0])
+
+            if mx[1][1] is None:
+                return mx[0]
+            else:
+                return mx[0] + mx[1][1].predict_word(word)
+
+        ch = word[0]
+
+        if ch not in self.characters:
+            return ""
+        else:
+            if self.characters[ch][1] is None:
+                return ch
+
+            nxt = self.characters[ch][1].predict_word(word[1:])
+
+            if nxt == "":
+                return ""
+            else:
+                return ch + nxt
+            
+    def __repr__(self):
+        return ", ".join([f"{k}: {v}" for k, v in self.characters.items()])

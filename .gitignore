@@ -15,3 +15,4 @@ test.gv
 finished.txt
 results.html
 output.txt
+__pycache__/*

@@ -2,7 +2,7 @@ Cost-Calculator is a command-line program for Python 3 that calculates the costs
 
 You must have python3 (3.7 recommended) and pyyaml installed for this to work. You can install pyyaml using `python3 -m pip install pyyaml`.
 
-To run the GUI version, you need flet installed. You can install flet using `pip install flet`.
+To run the GUI version, you need flet installed. You can install flet using `python3 -m pip install flet`.
 
 # Usage
 
@@ -14,7 +14,7 @@ After everything is inputted, the program will output what materials you need to
 
 # Config Format
 
-Configs are written in YAML.
+Configs are written in YAML. Programs must be restarted to respond to changes in configs.
 
 Pack configs are used to define crafting recipes. `packs/example.yaml` provides an example of such a config. Using this format will allow you to determine which crafting recipes you want to use. You can change the current pack with the configs, and also determine what commands can be used to stop getting items from the user.
 
