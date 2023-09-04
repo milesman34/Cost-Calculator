@@ -10,7 +10,7 @@ use already has items: false
 
 # Current pack to use
 # Default: "packs/default.yaml"
-current pack: packs/dj2.yaml
+current pack: packs/default.yaml
 
 # Addons to use (will be loaded along with the current pack)
 addons: [

@@ -222,7 +222,7 @@ class RecipeInputTextField(ft.TextField):
         index = len(value) - 1
 
         while index >= 0:
-            if value[index] in " ":
+            if value[index] in ", ":
                 break
             
             index -= 1
@@ -488,14 +488,11 @@ class RecipeModifier(ft.Container):
     # Checks the contents of a recipe
     def check_recipe(self, e):
         self.parent.check_recipe(self.text_field.value.strip())
-        self.text_field.value = ""
-        self.text_field.focus()
 
     # Deletes a recipe
     def delete_recipe(self, e):
         self.parent.delete_recipe(self.text_field.value.strip())
         self.text_field.value = ""
-        self.text_field.focus()
 
 # This class represents the toggle button between raw materials and fluids
 class MaterialToggleButton(ft.Container):
