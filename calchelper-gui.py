@@ -282,6 +282,13 @@ class RecipeInputTextField(ft.TextField):
 
         self.update()
 
+    # Adds words from an item
+    def add_words_from_item(self, word):
+        for word in word.split(" "):
+            self.trie.add_word(word)
+
+        self.update()
+
     # Creates a recipe
     def create_recipe(self, output, inputs):
         self.parent.create_recipe(output, inputs)
@@ -290,9 +297,9 @@ class RecipeInputTextField(ft.TextField):
     def on_tab_press(self):
         if self.focused:
             if self.suffix_text == "":
-                if len(self.value) > 0:
+                if len(self.value.strip()) > 0:
                     self.focus()
-                    
+
                 return
 
             # let's find the index to replace
@@ -513,13 +520,14 @@ class MaterialToggleButton(ft.Container):
 # This class adds or removes raw materials or fluids
 class FluidMaterialsModifier(ft.Container):
     # give it a type parameter which is materials or ae2_fluids
-    def __init__(self, typeparam, pack):
+    def __init__(self, typeparam, pack, parent):
         super().__init__()
 
         self.type = typeparam
         self.pack = pack
         self.margin = 5
         self.expand = True
+        self.parent = parent
 
         # track the raw materials or fluids
         self.material_list = ft.Column([], spacing=10, scroll=ft.ScrollMode.AUTO)
@@ -560,17 +568,24 @@ class FluidMaterialsModifier(ft.Container):
     def add_material(self, e):
         name = self.text_field.value.lower().strip()
 
+        added_item = False
+
         if name == "":
             return
 
         if self.type == "materials":
             if name not in self.pack.get_raw_materials():
                 self.pack.add_raw_material(name)
+                added_item = True
         elif name not in self.pack.get_ae2_fluids():
             self.pack.add_ae2_fluid(name)
+            added_item = True
 
         self.text_field.value = ""
         self.text_field.focus()
+
+        # Update trie
+        self.parent.parent.recipe_adder.recipe_text_field.add_words_from_item(name)
         
         self.load_materials()
         self.update()
@@ -602,16 +617,17 @@ class FluidMaterialsModifier(ft.Container):
 
 # This class represents the part of the program which manages fluids and raw materials
 class FluidMaterialsManager(ft.Container):
-    def __init__(self, expand, pack):
+    def __init__(self, expand, pack, parent):
         super().__init__()
 
         self.expand = expand
         self.margin = 0
+        self.parent = parent
 
         self.bgcolor = ft.colors.BLUE_700
 
-        self.materials_modifier = FluidMaterialsModifier("materials", pack)
-        self.fluid_modifier = FluidMaterialsModifier("ae2_fluids", pack)
+        self.materials_modifier = FluidMaterialsModifier("materials", pack, self)
+        self.fluid_modifier = FluidMaterialsModifier("ae2_fluids", pack, self)
 
         self.center_row = ft.Row([self.materials_modifier], expand=9)
 
@@ -682,7 +698,7 @@ class Calchelper(ft.UserControl):
         self.recipe_modifier = RecipeModifier(1, self)
 
         # part of the app that manages fluids and raw materials
-        self.fluid_materials_manager = FluidMaterialsManager(1, self.pack)
+        self.fluid_materials_manager = FluidMaterialsManager(1, self.pack, self)
 
         # main part of the app
         self.main_app = ft.Container(
