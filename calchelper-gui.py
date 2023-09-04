@@ -789,8 +789,6 @@ def recipe_screen(page):
 
     page.add(calchelper)
 
-# ft.app(target=launch_screen)
-
-gstate.file_name = "packs/dj2.yaml"
+ft.app(target=launch_screen)
 
 ft.app(target=recipe_screen)
