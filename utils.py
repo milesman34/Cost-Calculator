@@ -303,9 +303,18 @@ class Trie:
         # it will have a dict of characters which map to the amount of times that character appeared in that position, as well as either another Trie or None
         self.characters = {}
 
+        self.total_words = 0
+
+        # set of completed words to use
+        self.words = set()
+
     def add_word(self, word):
+        self.words.add(word)
+
         # this is recursive and uses multiple tries, so we start with the base case
         ch = word[0]
+
+        self.total_words += 1
 
         if len(word) == 1:
             if ch in self.characters:
@@ -323,15 +332,24 @@ class Trie:
                 new_trie.add_word(word[1:])
                 self.characters[ch] = (1, new_trie)
 
-    # This now attempts to predict a word based on the given text
-    def predict_word(self, word):
+    # This now attempts to predict a word based on the given text (use the amount of words, track the number of times this word has appeared too, words represents the set of words, current represents the current string)
+    def predict_word(self, word, num_words=-1, words=None, current="", starting_word=None):
+        num_words = num_words if num_words >= 0 else self.total_words
+        words = self.words if words is None else words
+        start = word if starting_word is None else starting_word
+
         if len(word) == 0:
             mx = max(self.characters.items(), key=lambda n: n[1][0])
 
-            if mx[1][1] is None:
+            if current in words and mx[1][0] <= num_words - mx[1][0]:
+                if current == start:
+                    return mx[0] + mx[1][1].predict_word(word, mx[1][0], words=words, current=current + mx[0], starting_word=start)
+                else:
+                    return ""
+            elif mx[1][1] is None:
                 return mx[0]
             else:
-                return mx[0] + mx[1][1].predict_word(word)
+                return mx[0] + mx[1][1].predict_word(word, mx[1][0], words=words, current=current + mx[0], starting_word=start)
 
         ch = word[0]
 
@@ -341,7 +359,7 @@ class Trie:
             if self.characters[ch][1] is None:
                 return ch
 
-            nxt = self.characters[ch][1].predict_word(word[1:])
+            nxt = self.characters[ch][1].predict_word(word[1:], self.characters[ch][0], words=words, current=current + ch, starting_word=start)
 
             if nxt == "":
                 return ""
