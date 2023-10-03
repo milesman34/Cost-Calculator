@@ -216,6 +216,10 @@ class RecipeInputTextField(ft.TextField):
             for item in recipe.get_inputs():
                 for word in item.get_item_name().split(" "):
                     self.trie.add_word(word)
+                    
+        # Set up autocomplete for ae2_fluid and raw_material
+        self.trie.add_word("ae2_fluid", 100)
+        self.trie.add_word("raw_material", 100)
 
     # Finds the index to use for auto-complete
     def auto_complete_index(self, value):
@@ -257,10 +261,35 @@ class RecipeInputTextField(ft.TextField):
         # print("Submitted", value)
 
         if self.label == "Enter Output":
-            # get the output item from the text box
-            self.output_item = make_item_stack(self.value.lower().strip())
+            # check for ae2_fluid or raw_material
+            val = self.value.lower().strip()
+            
+            words = val.split(" ")
+            
+            # very hacky code to update that part of the UI
+            if words[0] == "raw_material":
+                md = self.parent.fluid_materials_manager
+                md2 = md.materials_modifier
+                
+                if md.material_toggle.content.text == "Fluids":
+                    md.material_toggle.handle_click(None)
+                
+                md2.text_field.value = " ".join(words[1:])
+                md2.add_material(None, False)
+            elif words[0] == "ae2_fluid":
+                md = self.parent.fluid_materials_manager
+                md2 = md.fluid_modifier
+                
+                if md.material_toggle.content.text == "Raw Materials":
+                    md.material_toggle.handle_click(None)
+                
+                md2.text_field.value = " ".join(words[1:])
+                md2.add_material(None, False)
+            else:
+                # get the output item from the text box
+                self.output_item = make_item_stack(val)
 
-            self.label = f"Enter Inputs for {self.output_item.get_item_name()}"
+                self.label = f"Enter Inputs for {self.output_item.get_item_name()}"
         else:
             self.label = "Enter Output"
 
@@ -562,7 +591,7 @@ class FluidMaterialsModifier(ft.Container):
             ]))
 
     # Adds a material of the given type
-    def add_material(self, e):
+    def add_material(self, e, focus=True):
         name = self.text_field.value.lower().strip()
 
         added_item = False
@@ -579,7 +608,9 @@ class FluidMaterialsModifier(ft.Container):
             added_item = True
 
         self.text_field.value = ""
-        self.text_field.focus()
+        
+        if focus:
+            self.text_field.focus()
 
         # Update trie
         self.parent.parent.recipe_adder.recipe_text_field.add_words_from_item(name)
@@ -627,10 +658,12 @@ class FluidMaterialsManager(ft.Container):
         self.fluid_modifier = FluidMaterialsModifier("ae2_fluids", pack, self)
 
         self.center_row = ft.Row([self.materials_modifier], expand=9)
+        
+        self.material_toggle = MaterialToggleButton(self)
 
         self.content = ft.Column([
             ft.Row([
-                MaterialToggleButton(self)
+                self.material_toggle
             ]),
             self.center_row
         ], spacing=0, expand=True)

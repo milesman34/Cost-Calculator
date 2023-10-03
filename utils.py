@@ -308,7 +308,7 @@ class Trie:
         # set of completed words to use
         self.words = set()
 
-    def add_word(self, word):
+    def add_word(self, word, multi=1):
         self.words.add(word)
 
         # this is recursive and uses multiple tries, so we start with the base case
@@ -318,18 +318,18 @@ class Trie:
 
         if len(word) == 1:
             if ch in self.characters:
-                self.characters[ch] = (self.characters[ch][0] + 1, self.characters[ch][1])
+                self.characters[ch] = (self.characters[ch][0] + multi, self.characters[ch][1])
             else:
-                self.characters[ch] = (1, None)
+                self.characters[ch] = (multi, None)
         else:
             if ch in self.characters:
                 new_amt = self.characters[ch][0] + 1
                 new_trie = Trie() if self.characters[ch][1] is None else self.characters[ch][1]
-                new_trie.add_word(word[1:])
+                new_trie.add_word(word[1:], multi)
                 self.characters[ch] = (new_amt, new_trie)
             else:
                 new_trie = Trie()
-                new_trie.add_word(word[1:])
+                new_trie.add_word(word[1:], multi)
                 self.characters[ch] = (1, new_trie)
 
     # This now attempts to predict a word based on the given text (use the amount of words, track the number of times this word has appeared too, words represents the set of words, current represents the current string)
