@@ -115,6 +115,29 @@ DepthDictionary = Dict[int, List[ItemStack]]
 """DepthDictionaries map integer depths to a list of ItemStacks. They are used for calculating costs."""
 
 
+@dataclass
+class HTMLCacheKey:
+    """HTMLCacheKey is a cachable key in the HTML cache."""
+    name: str
+    amount_string: str
+    leftover: int
+    
+    def __hash__(self) -> int:
+        return hash((self.name, self.amount_string, self.leftover))
+    
+    
+@dataclass
+class HTMLResultCacheKey:
+    """HTMLResultCacheKey is a cachable key in the HTML result cache, for memoizing get_html."""
+    name: str
+    amount: int
+    leftover: int
+    depth: int
+    
+    def __hash__(self) -> int:
+        return hash((self.name, self.amount, self.leftover, self.depth))
+
+
 class App:
     """The App class manages the cost calculator app."""
     def __init__(self, args=[]) -> None:
@@ -175,9 +198,12 @@ class App:
         self.preexisting_items_asked_about: Set[str] = set()
         """Set of preexisting items that the program has already asked the user about."""
 
-        # cache for html elements TODO: Write documentation + set up typing for this, this part is more complex
-        self.html_cache = {}
-        self.html_result_cache = {}
+        # The 2 HTML caches are somewhat hackier to understand
+        self.html_cache: Dict[HTMLCacheKey, HTMLCacheKey | List[HTMLCacheKey]] = {}
+        """Cache that maps the key objects to either a list of keys or just 1 key."""
+        
+        self.html_result_cache: Dict[HTMLResultCacheKey, str] = {}
+        """Cache of precalculated results for get_html."""
 
         self.crafting_bytes = 0
         """How many crafting bytes does the recipe currently use?"""
@@ -496,21 +522,27 @@ class App:
 
             return result
 
-    # Gets the html to display for an item
     def get_html(self, name: str, amount: int, leftover: int=0, depth: int=0) -> str:
-        # check if item is uncraftable
+        """Returns the HTML to display for an item."""
+        # check if item is uncraftable or is already in the result cache
         if not self.pack.has_recipe(name):
             return ""
-        elif (name, amount, leftover, depth) in self.html_result_cache:
-            return self.html_result_cache[(name, amount, leftover, depth)]
+        else:
+            entry = HTMLResultCacheKey(name, amount, leftover, depth)
+            
+            if entry in self.html_result_cache:
+                return self.html_result_cache[entry]
             
         self.evaluated_items = {}
 
+        # Calculate the costs in a simplified manner
         results = self.simplified_calculate_cost(name, amount)
 
+        # Set up the HTML to display
         result = "<div>"
 
-        cache_result = []
+        # What should be added to the HTML cache?
+        cache_result: List[HTMLCacheKey] = []
 
         # Sorting works differently for (str, int): prioritize items with recipes, amounts, alphabetical
         for item_name, item_tuple in sorted(
@@ -527,34 +559,33 @@ class App:
 
             new_element = f"<div class='depth'"
 
+            # Is the inner HTML empty? (no more nesting)
             is_empty = inner_html == ""
+            
+            cache_key = HTMLCacheKey(item_name, xpstring, item_leftover)
 
             if is_empty:
-                self.html_cache[(item_name, xpstring, item_leftover)] = (item_name, xpstring, item_leftover)
+                self.html_cache[cache_key] = cache_key
                 new_element += f"> {xpstring} {item_name}\n"
             else:
-                # new_element += f" class='htmlid'>"
                 # Symbol /// is required to ensure splitting works properly with formatted exponent strings
+                # This is definitely some of the hackiest code in this codebase
                 new_element += f" class='htmlid'><div class='toggleid'>{xpstring} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>{item_name}///{xpstring}///{item_leftover}</div>"
-            #     new_element += f" class='htmlid'><div class='toggleid'>{to_formatted_string(item_amount)} {item_name}{f' ({item_leftover} left over)' if self.show_left_over_amount and item_leftover > 0 else ''} [+]</div><div style='display: none;'>('{item_name}' {item_amount} {item_leftover})</div>\n"
-            #     new_element += f">"
 
-            cache_result.append((item_name, xpstring, item_leftover))
-
-            
-            # new_element += f">{item_name} {item_amount}"
+            cache_result.append(cache_key)
 
             result += new_element + "</div>\n"
-
         
-        self.html_cache[(name, to_formatted_string(amount), leftover)] = cache_result
+        self.html_cache[HTMLCacheKey(name, to_formatted_string(amount), leftover)] = cache_result
+        
         result += "</div>\n"
-        self.html_result_cache[(name, amount, leftover, depth)] = result
+        
+        self.html_result_cache[HTMLResultCacheKey(name, amount, leftover, depth)] = result
 
         return result
 
-    # Writes an html file
-    def write_html(self, items: dict[str, int]):
+    def write_html(self, items: Dict[str, int]):
+        """Writes an HTML file from the dictionary of user items provided."""
         fs = open("results.html", "w+")
 
         fs.write("""<html><body><script
@@ -566,19 +597,15 @@ src="https://code.jquery.com/jquery-3.6.1.js"
             fs.write(f"\n<div class='root'>{amount} {name}</div>{self.get_html(name, amount)}")
 
         # Create string from key
-        def key_string(k):
-            return f"{k[0]}///{k[1]}///{k[2]}"
+        def key_string(k: HTMLCacheKey) -> str:
+            return f"{k.name}///{k.amount_string}///{k.leftover}"
 
         # let's set up the cache
-        string_arr = []
-
-        count = 0
+        string_arr: List[str] = []
 
         for k, v in self.html_cache.items():
             if type(v) == list:
                 string_arr.append(f"cache[\"{key_string(k)}\"] = {[key_string(i) for i in v]};\n")
-
-                count += 1
 
         fs.write(f"""
             <script>
@@ -587,7 +614,7 @@ src="https://code.jquery.com/jquery-3.6.1.js"
             </script>\n
         """)
 
-        # script for buttons
+        # script for buttons (yes this code is as bad as it looks)
         fs.write(f"""
         <script>
             // add elements for all children
@@ -616,7 +643,7 @@ src="https://code.jquery.com/jquery-3.6.1.js"
 					let name = split.slice(0, -2).join(" ");
 					
 					if (entry in cache) {{
-						element.html(`<div class="depth htmlid"><div class="toggleid">${{amount}} ${{name}}${{{'parseInt(leftover) > 0 ? ` (${leftover} left over)` : ""}' if self.show_left_over_amount else ""} [+]</div><div style="display: none;">${{name}}///${{amount}}///${{leftover}}</div></div>`);
+						element.html(`<div class="depth htmlid"><div class="toggleid">${{amount}} ${{name}}{('${parseInt(leftover) > 0 ? ` (${leftover} left over)` : ""}') if self.show_left_over_amount else ""} [+]</div><div style="display: none;">${{name}}///${{amount}}///${{leftover}}</div></div>`);
 					}} else {{
 						element = $(`<div class="depth"> ${{amount}} ${{name}}</div>`);
 					}}
