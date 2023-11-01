@@ -1,6 +1,6 @@
 import collections, math, os, platform, sys, yaml
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
 
 YAML_Data = Dict[str, Any]
@@ -101,88 +101,89 @@ class PackConfigFile:
     # Pass the yaml file from load_config_file
     def __init__(self, yaml_file: YAML_Data):
         """When creating a PackConfigFile, pass in the results of load_config_file called with the path to the pack's config file."""
-        self.items: Dict[str, CraftingRecipe] = {}
+        self.recipes: Dict[str, CraftingRecipe] = {}
         """This dict maps the names of items to a CraftingRecipe for that item."""
 
         for key, value in yaml_file.items():
             if len(value["items"]) > 0: # can't have recipe with no inputs
-                self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
+                # "produces" does not appear in every yaml item, so just default it to 1.
+                # We also need to make an item stack for everything in the yaml key "items"
+                self.recipes[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
 
-    # Returns if the pack has a recipe for an item
-    def has_recipe(self, item):
-        return item in self.items
+    def has_recipe(self, name: str) -> bool:
+        """Returns if the recipe pack has a recipe for an item."""
+        return name in self.recipes
 
-    # Deletes a recipe from the pack
-    def delete_recipe(self, item):
-        del self.items[item]
+    def delete_recipe(self, item: str):
+        """Deletes the recipe outputting the given item from the pack."""
+        del self.recipes[item]
 
     # Gets the recipe for an item if it exists
-    def get_recipe(self, item):
+    def get_recipe(self, item: str) -> Optional["CraftingRecipe"]:
+        """Returns the recipe that produces the given item if said recipe exists, otherwise returning None."""
         if self.has_recipe(item):
-            return self.items[item]
+            return self.recipes[item]
         else:
             return None
 
-    # Sets a recipe
-    def set_recipe(self, item, recipe):
-        self.items[item] = recipe
+    def set_recipe(self, item: str, recipe: "CraftingRecipe"):
+        """Sets a recipe in the pack config for the given item."""
+        self.recipes[item] = recipe
 
-    # Gets the types of items used in a recipe
-    def get_recipe_item_types(self, item):
-        if not self.has_recipe(item):
+    def get_recipe_item_types(self, item: str) -> Set[str]:
+        """Gets a set of the types of items used in the recipe for an item."""
+        recipe = self.get_recipe(item)
+        
+        if recipe is None:
             return set()
         else:
-            return self.get_recipe(item).get_item_types()
+            return recipe.get_item_types()
 
-    # Gets the set of raw materials
-    def get_raw_materials(self):
+    def get_raw_materials(self) -> Set[str]:
+        """Returns the set containing all raw materials in the pack."""
         return self.get_recipe_item_types("materials")
 
-    # Adds a raw material to the pack
-    def add_raw_material(self, material):
-        if not self.has_recipe("materials"): # it may have to create the list of materials
+    def add_raw_material(self, material: str):
+        """Adds a raw material to the pack."""
+        recipe = self.get_recipe("materials")
+        
+        if recipe is None: # it may have to create the list of materials
             self.set_recipe("materials", CraftingRecipe("materials", [ItemStack(material)]))
         else:
-            # Get the current materials recipe
-            materials_recipe = self.get_recipe("materials")
-
             # We add the new itemstack to the end of the recipe
-            self.set_recipe("materials", CraftingRecipe("materials", materials_recipe.get_inputs() + [ItemStack(material)]))
+            self.set_recipe("materials", CraftingRecipe("materials", recipe.inputs + [ItemStack(material)]))
 
-    # Gets the set of ae2 fluids
-    def get_ae2_fluids(self):
+    def get_ae2_fluids(self) -> Set[str]:
+        """Returns the set containing all AE2 fluids in the pack."""
         return self.get_recipe_item_types("ae2_fluids")
-
-    # Adds an ae2 fluid to the pack
-    def add_ae2_fluid(self, fluid):
-        if not self.has_recipe("ae2_fluids"): # it may have to create the list of materials
+    
+    def add_ae2_fluid(self, fluid: str):
+        """Adds an AE2 fluid to the pack."""
+        recipe = self.get_recipe("ae2_fluids")
+        
+        if recipe is None: # it may have to create the list of materials
             self.set_recipe("ae2_fluids", CraftingRecipe("ae2_fluids", [ItemStack(fluid)]))
         else:
-            # Get the current ae2 fluids recipe
-            fluids_recipe = self.get_recipe("ae2_fluids")
-
             # We add the new itemstack to the end of the recipe
-            self.set_recipe("ae2_fluids", CraftingRecipe("ae2_fluids", fluids_recipe.get_inputs() + [ItemStack(fluid)]))
+            self.set_recipe("ae2_fluids", CraftingRecipe("ae2_fluids", recipe.inputs + [ItemStack(fluid)]))
 
-    # Gets the list of recipes
-    def get_all_recipes(self):
-        return self.items
+    def get_recipes_iterable(self) -> Iterator[Tuple[str, "CraftingRecipe"]]:
+        """Returns a key/value (item_name, recipe) iterable for all of the recipes in the pack."""
+        return iter(self.recipes.items())
 
-    # Returns an key/value (item_name, recipe) iterable for all of the recipes
-    def get_recipes_iterable(self):
-        return self.items.items()
-
-    # Extends a pack with an addon (in the form of another PackConfigFile)
     def extend_pack(self, addon: "PackConfigFile"):
+        """Extends the pack with an addon (another PackConfigFile), adding and/or replacing recipes as needed."""
         for item, recipe in addon.get_recipes_iterable():
             self.set_recipe(item, recipe)
 
-    # Gets the depth of an item's recipe
     def get_recipe_depth(self, item):
-        if self.has_recipe(item):
-            return self.get_recipe(item).get_depth()
-        else:
+        """Gets the depth of the recipe for an item, if it exists. If the recipe does not exist, it returns 0."""
+        recipe = self.get_recipe(item)
+        
+        if recipe is None:
             return 0
+        else:
+            return recipe.depth
 
 
 def load_pack_config(path: str) -> PackConfigFile:
