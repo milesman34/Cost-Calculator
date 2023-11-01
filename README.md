@@ -1,6 +1,8 @@
 Cost-Calculator is a command-line program for Python 3 that calculates the costs of items in video games. It is designed around Minecraft.
 
-You must have python3 (3.7 recommended) and pyyaml installed for this to work.
+You must have python3 (3.7 recommended) and pyyaml installed for this to work. You can install pyyaml using `python3 -m pip install pyyaml`.
+
+To run the GUI version, you need flet installed. You can install flet using `python3 -m pip install flet`.
 
 # Usage
 
@@ -8,11 +10,11 @@ When using, make sure to separate your inputs with spaces. They should be in the
 
 If `use_already_has_items` is enabled in the config, it will ask the user how much of relevant materials they have. This is used to figure out how many items they actually need to get or produce.
 
-After everything is inputted, the program will output what materials you need to collect in order to craft the items listed. It will also show the amount of microcrafting needed.
+After everything is inputted and the stop command `-r` is entered, the program will output what materials you need to collect in order to craft the items listed. It will also show the amount of microcrafting needed. 
 
 # Config Format
 
-Configs are written in YAML.
+Configs are written in YAML. Programs must be restarted to respond to changes in configs.
 
 Pack configs are used to define crafting recipes. `packs/example.yaml` provides an example of such a config. Using this format will allow you to determine which crafting recipes you want to use. You can change the current pack with the configs, and also determine what commands can be used to stop getting items from the user.
 
@@ -30,6 +32,8 @@ Use this script to make encoding recipes. It will ask you for a file name. The f
 It will ask you for the output item first. The number of items goes before the item name, and is optional (presumed to be 1).
 
 Then it will ask you for the input items, which are delimited by items.
+
+Can quit out (saving data) with `-r`, or save data without quitting with `-s`.
 
 Example of use:
 
@@ -50,3 +54,7 @@ output: -r
 You may also overwrite entries, delete them with the `delete` prefix (example: `delete gold`), and check the contents with the `check` prefix.
 
 You can use the `raw_material` prefix to add a new raw material, and use `raw_materials` to check the raw materials.
+
+You can use the `ae2_fluid` prefix to add a new fluid, and use `ae2_fluids` to check the fluids. These fluids are used mainly for crafting byte calculation, as AE2 treats every item as a byte, but every 1000 mb of a fluid as a byte.
+
+I could add a GUI version of the calchelper
