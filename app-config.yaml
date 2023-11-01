@@ -1,6 +1,6 @@
-# Should the cost calculator get items the player already has?
+# Should the cost calculator get items the user already has?
 # Default: false
-use already has items: false
+use preexisting items: false
 
 # Current pack to use
 # Default: "packs/example.yaml"
@@ -10,7 +10,7 @@ current pack: packs/example.yaml
 addons: [
 ]
 
-# Skip asking for sub-resources the player already has?
+# Skip asking for sub-resources the user already has?
 # Default: true
 skip resources: true
 

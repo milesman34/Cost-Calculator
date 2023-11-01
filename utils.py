@@ -66,7 +66,7 @@ class MainConfigFile:
     def __init__(self, yaml_file: YAML_Data):
         """When creating the MainConfigFile instance, pass in the results of load_config_file called with the app-config.yaml path."""
         # Gets all data from the file
-        self.use_preexisting_items: bool = yaml_file["use already has items"]
+        self.use_preexisting_items: bool = yaml_file["use preexisting items"]
         """Should the cost calculator ask for items the user already has?"""
         
         self.current_pack: str = yaml_file["current pack"]
