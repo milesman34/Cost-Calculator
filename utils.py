@@ -110,11 +110,12 @@ class PackConfigFile:
         self.recipes: Dict[str, CraftingRecipe] = {}
         """This dict maps the names of items to a CraftingRecipe for that item."""
 
-        for key, value in yaml_file.items():
-            if len(value["items"]) > 0: # can't have recipe with no inputs
-                # "produces" does not appear in every yaml item, so just default it to 1.
-                # We also need to make an item stack for everything in the yaml key "items"
-                self.recipes[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
+        if yaml_file is not None:
+            for key, value in yaml_file.items():
+                if len(value["items"]) > 0: # can't have recipe with no inputs
+                    # "produces" does not appear in every yaml item, so just default it to 1.
+                    # We also need to make an item stack for everything in the yaml key "items"
+                    self.recipes[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
 
     def delete_recipe(self, item: str):
         """Deletes the recipe outputting the given item from the pack."""

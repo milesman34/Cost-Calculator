@@ -1,14 +1,12 @@
-import os, re, yaml
+import re
+
 
 from utils import *
 
-from typing import Set
 
-from functools import cache
-
-# Parses an input, returning a tuple containing the amount and item type
-def parse_text(text):
-    text = text.lower().strip()
+def parse_text(text: str) -> Tuple[int, str]:
+    """Parses an input, returning a tuple containing the amount and item type."""
+    text = sanitize_input_string(text.lower())
 
     amount = first_word(text)
 
@@ -17,93 +15,89 @@ def parse_text(text):
     else:
         return (1, text)
 
-def get_all_raw_materials(_item):
-    cache = {}
 
-    def get_all_raw_materials2(item):
+def get_all_raw_materials(_item: str) -> Set[str]:
+    """Gets the list of all the raw materials used to craft an item."""
+    cache: Dict[str, Set[str]] = {}
+
+    # Helper function that works with the cache recursively
+    def get_all_raw_materials2(item: str) -> Set[str]:
         try:
-            if item not in cache:
-                result = set()
+            # The function is memoized
+            if item in cache:
+                return cache[item]
+            else:
+                result: Set[str] = set()
+                
+                recipe = pack.get_recipe(item)
 
-                if pack.has_recipe(item):
-                    for item2 in pack.get_recipe(item).get_item_types():
-                        result.update(get_all_raw_materials2(item2))
-                else:
+                if recipe is None:
                     result.add(item)
+                else:
+                    # Iterate over all item types in the given recipe and add their raw materials
+                    for item2 in recipe.get_item_types():
+                        result.update(get_all_raw_materials2(item2))
 
+                # Update cache
                 cache[item] = result
                 return result
-            else:
-                return cache[item]
         except:
+            # If there is an exception, it most likely is because of a recipe loop
             print(f"RecursionError with item {item}")
             return set()
 
     return get_all_raw_materials2(_item)
 
-# Tries to print the items without recipes based on an item name
-def print_without_recipes(item):
+
+def print_without_recipes(item: str):
+    """Tries to print the items without recipes based on the recipe for an item name."""
     print("")
 
     if app_config.print_items_without_recipes:
         recipe = pack.get_recipe(item)
-
-        # All items used in the recipe
-        unique_items = recipe.get_item_types()
-
-        # The raw materials of the pack
-        materials = pack.get_raw_materials()
         
-        print(f"Missing: {[item2 for item2 in sorted(unique_items) if not (pack.has_recipe(item2) or item2 in materials)]}")
+        if recipe is not None:
+            # All items used in the recipe
+            unique_items = recipe.get_item_types()
 
-        # The raw materials to be displayed are not included in the missing elements
-        if app_config.display_raw_materials:
-            # Remove items already included in the recipe
-            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item]
+            # The raw materials of the pack (since these should not be printed)
+            materials = pack.get_raw_materials()
+            
+            # Only print items which do not have a recipe and are not a raw material
+            print(f"Missing: {[item2 for item2 in sorted(unique_items) if not (pack.has_recipe(item2) or item2 in materials)]}")
 
-            if len(raw_materials) > 0:
-                print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
+            # The raw materials to be displayed are not included in the missing elements
+            if app_config.display_raw_materials:
+                # Remove items already included in the recipe, those shouldn't be printed again
+                raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (mat not in materials) and mat != item]
 
-# # Gets the list of raw materials
-# def get_materials():
-#     materials = []
+                if len(raw_materials) > 0:
+                    print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
+                    
 
-#     if "materials" in pack:
-#         materials = pack["materials"]
-
-#         print(pack)
-
-#         if "items" in materials:
-#             materials = materials["items"]
-        
-#         return [" ".join(i.split(" ")[1:]) for i in materials]
-#     else:
-#         return []
-
-# Saves the data
-def save_data(path, _pack=None):
+def save_data(path: str, _pack: Optional[PackConfigFile]=None):
+    """Saves the pack data to the file."""
     _pack = pack if _pack is None else _pack
 
+    # Start by opening the file
     with open(path, "w+") as f:
         for item, recipe in _pack.get_recipes_iterable():
             f.write(f"{item}:\n")
 
-            if recipe.get_amount_produced() > 1:
-                f.write(f"    produces: {recipe.get_amount_produced()}\n\n")
+            if recipe.amount_produced > 1:
+                f.write(f"    produces: {recipe.amount_produced}\n\n")
 
             f.write("    items:\n")
 
             # this should work
-            items = recipe.get_inputs()
-
-            for item2 in items:
+            for item2 in recipe.inputs:
                 f.write(f"        - {item2}\n")
 
             f.write("\n")
 
-# Edits the config files with a file name
-def edit_configs_with_pack_name(name):
-    # Edits config text
+
+def edit_configs_with_pack_name(name: str):
+    """Updates app-config.yaml to have the right pack name."""
     with open("app-config.yaml", "r") as f:
         lines = f.readlines()
         
@@ -121,6 +115,7 @@ def edit_configs_with_pack_name(name):
 
         f.close()
 
+
 if __name__ == "__main__":
     # Loads the main app config file
     app_config = load_main_config()
@@ -129,17 +124,15 @@ if __name__ == "__main__":
     clear()
 
     # Gets file name
-    pack = input("Enter pack name: ")
+    pack_name = input("Enter pack name: ")
 
-    file_name = f"packs/{pack}.yaml"
+    file_name = f"packs/{pack_name}.yaml"
 
     edit_configs_with_pack_name(file_name)
 
     print("")
 
-    file_text = ""
-
-    # Gets the yaml file
+    # Loads the yaml file for the pack
     pack = load_pack_config(file_name)
 
     while True:
@@ -223,9 +216,9 @@ if __name__ == "__main__":
         split_inputs = re.split(", *", inputs)
 
         # Gets all of the inputs into the parsed form (remove failed items with empty names)
-        parsed_inputs = [i for i in [make_item_stack(i) for i in split_inputs] if i.get_item_name() != ""]
+        parsed_inputs = [i for i in [make_item_stack(i) for i in split_inputs] if i.name != ""]
 
-        item_name = output.get_item_name()
+        item_name = output.name
 
         # Sets the recipe for the pack
         pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, parsed_inputs))
@@ -236,5 +229,5 @@ if __name__ == "__main__":
         # The empty line is part of the formatting
         print("")
 
-        ve_data(file_name)
+        save_data(file_name)
         

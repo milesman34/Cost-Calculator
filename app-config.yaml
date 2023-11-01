@@ -4,7 +4,7 @@ use preexisting items: false
 
 # Current pack to use
 # Default: "packs/example.yaml"
-current pack: packs/example.yaml
+current pack: packs/newtest.yaml
 
 # Addons to use (will be loaded along with the current pack)
 addons: [
