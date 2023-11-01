@@ -5,17 +5,18 @@ stop commands:
   - "--run"
 
 # Should the cost calculator get items the player already has?
-# Default: true
-use already has items: true
+# Default: false
+use already has items: false
 
 # Current pack to use
-# Default: "packs/default.yaml"
-current pack: packs/dj1.yaml
+# Default: "packs/example.yaml"
+current pack: packs/example.yaml
 
+# Addons to use (will be loaded along with the current pack)
 addons: [
 ]
 
-# Skip asking for resources the player already has?
+# Skip asking for sub-resources the player already has?
 # Default: true
 skip resources: true
 
@@ -30,3 +31,15 @@ display all raw materials: true
 # Produce HTML output
 # Default: false
 html output: false
+
+# Show how much is left over for each craft (for subcrafts)
+# Default: false
+show left over amount: false
+
+# Use the alternate method for sorting depths for display based on the item used to craft it with the highest sorting depth
+# Default: false
+use alternate sorting depth method: false
+
+# Show AE2's crafting bytes calculation at the end of the page
+# Default: false
+show crafting bytes: false

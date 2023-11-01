@@ -17,212 +17,224 @@ def parse_text(text):
     else:
         return (1, text)
 
-# Gets the raw materials for a given item
-@cache
-def get_all_raw_materials(item):
-    if item in pack:
-        result = set()
+def get_all_raw_materials(_item):
+    cache = {}
 
-        for component in pack[item]["items"]:
-            component_name = get_remaining_words(component)
+    def get_all_raw_materials2(item):
+        try:
+            if item not in cache:
+                result = set()
 
-            result.update(get_all_raw_materials(component_name))
+                if pack.has_recipe(item):
+                    for item2 in pack.get_recipe(item).get_item_types():
+                        result.update(get_all_raw_materials2(item2))
+                else:
+                    result.add(item)
 
-        return result
-    else:
-        return { item }
+                cache[item] = result
+                return result
+            else:
+                return cache[item]
+        except:
+            print(f"RecursionError with item {item}")
+            return set()
 
-# Flattens a 2D list
-def flatten(xss):
-    return [x for xs in xss for x in xs]
+    return get_all_raw_materials2(_item)
 
-# Tries to print the items without recipes
-def print_without_recipes(inputs):
+# Tries to print the items without recipes based on an item name
+def print_without_recipes(item):
     print("")
 
-    if app_config["print items without recipes"]:
-        unique_items = list(set([i for i in inputs]))
+    if app_config.should_print_items_without_recipes():
+        recipe = pack.get_recipe(item)
+
+        # All items used in the recipe
+        unique_items = recipe.get_item_types()
+
+        # The raw materials of the pack
+        materials = pack.get_raw_materials()
         
-        print(f"Missing: {[i for i in sorted(unique_items) if not (i in pack or i in get_materials())]}")
+        print(f"Missing: {[item2 for item2 in sorted(unique_items) if not (pack.has_recipe(item2) or item2 in materials)]}")
 
         # The raw materials to be displayed are not included in the missing elements
-        if app_config["display all raw materials"]:
-            raw_materials = [i for i in list(set(flatten(list(get_all_raw_materials(item)) for item in inputs))) if not (i in unique_items or i in get_materials())]
+        if app_config.should_display_raw_materials():
+            # Remove items already included in the recipe
+            raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item]
 
             if len(raw_materials) > 0:
-                print(f"\nRaw Materials: {[i for i in sorted(raw_materials) if i not in pack]}")
+                print(f"\nRaw Materials: {[i for i in sorted(raw_materials)]}")
 
-# Gets the list of raw materials
-def get_materials():
-    materials = []
+# # Gets the list of raw materials
+# def get_materials():
+#     materials = []
 
-    if "materials" in pack:
-        materials = pack["materials"]
+#     if "materials" in pack:
+#         materials = pack["materials"]
 
-        if "items" in materials:
-            materials = materials["items"]
+#         print(pack)
+
+#         if "items" in materials:
+#             materials = materials["items"]
         
-        return [" ".join(i.split(" ")[1:]) for i in materials]
-    else:
-        return []
+#         return [" ".join(i.split(" ")[1:]) for i in materials]
+#     else:
+#         return []
 
-# Loads the main app config file
-app_config = load_main_config()
+# Saves the data
+def save_data(path, _pack=None):
+    _pack = pack if _pack is None else _pack
 
-# This script provides a wrapper around the program for easy editing and use
-os.system("clear")
+    with open(path, "w+") as f:
+        for item, recipe in _pack.get_recipes_iterable():
+            f.write(f"{item}:\n")
 
-# Gets file name
-pack = input("Enter pack name: ")
+            if recipe.get_amount_produced() > 1:
+                f.write(f"    produces: {recipe.get_amount_produced()}\n\n")
 
-file_name = f"packs/{pack}.yaml"
+            f.write("    items:\n")
 
-# Edits config text
-with open("app-config.yaml", "r") as f:
-    lines = f.readlines()
-    
-    # Edits the line containing the current pack
-    for i, line in enumerate(lines):
-        if line[:12] == "current pack":
-            lines[i] = f'current pack: {file_name}\n'
+            # this should work
+            items = recipe.get_inputs()
 
-    f.close()
+            for item2 in items:
+                f.write(f"        - {item2}\n")
 
-# Overwrites the configs
-with open("app-config.yaml", "w") as f:
-    for line in lines:
-        f.write(line)
+            f.write("\n")
 
-    f.close()
-
-print("")
-
-file_text = ""
-
-# Gets the yaml file
-pack = load_pack_config(file_name)
-
-sys.exit()
-
-# Fixes it if the file is empty
-if pack == None:
-    pack = {}
-
-while True:
-    # Gets the item to be produced
-    output = input("output: ").strip()
-
-    # Command to potentially use
-    command = output.split(" ")[0]
-
-    # Breaks the loop if needed
-    if output == "-r":
-        break
-    elif command == "delete":
-        # Deletes an entry
-        entry = " ".join(output.split(" ")[1:])
-
-        if entry in pack:
-            del pack[entry]
-
-            print(f"Entry {entry} deleted!\n")
-        else:
-            print(f"Entry {entry} not found!\n")
-
-        continue
-    elif command == "check":
-        # Checks if an entry exists
-        entry = " ".join(output.split(" ")[1:])
-
-        if entry in pack:
-            try:
-                print(f"Entry {entry} found!\n")
-                print(pack[entry]["items"])
-                print_without_recipes([parse_text(i)[1] for i in pack[entry]["items"]])
-                print("")
-            except:
-                pass
-        else:
-            print(f"Entry {entry} not found!\n")
-
-        continue
-    elif command == "raw_material":
-        # Gets the material
-        material = f"1 {' '.join(output.split(' ')[1:])}"
-
-        if "materials" in pack:
-            if "items" in pack["materials"]:
-                pack["materials"]["items"].append(material)
-            else:
-                pack["materials"].append(material)
-        else:   
-            pack["materials"] = [material]
-
-        print("")
-        continue
-    elif command == "raw_materials":
-        # Checks the raw materials
-        entry = pack["materials"] if "materials" in pack else []
-        print("Materials:", entry["items"] if "items" in entry else entry)
-        print("")
-
-        continue
-    else:
-        output = parse_text(output)
-
-    # Gets the inputs (in comma delimited string form)
-    inputs = input("inputs: ")
-
-    # Splits the comma delimited inputs using regex
-    split_inputs = re.split(", *", inputs)
-
-    # Gets all of the inputs into the parsed form
-    parsed_inputs = [i for i in [parse_text(i) for i in split_inputs] if i[1] != ""]
-
-    # Prints the items that don't have recipes
-    print_without_recipes([i[1] for i in parsed_inputs])
-
-    # Converts the parsed inputs into the versions used in the file
-    file_inputs = [f"{i[0]} {i[1]}" for i in parsed_inputs]
-
-    entry = {
-        "produces": output[0],
-        "items": file_inputs
-    } if output[0] != 1 else {
-        "items": file_inputs
-    }
-
-    # Overwrites the original entry
-    pack[output[1]] = entry
-
-    # file_text += f"\n{output[1]}:\n"
-
-    # if output[0] != 1:
-    #     file_text += f"   produces: {output[0]}\n\n"
-
-    # file_text += "   items:\n"
-
-    # # Iterates over inputs
-    # for item in parsed_inputs:
-    #     file_text += f"      - {item[0]} {item[1]}\n"
+# Edits the config files with a file name
+def edit_configs_with_pack_name(name):
+    # Edits config text
+    with open("app-config.yaml", "r") as f:
+        lines = f.readlines()
         
-    # The empty line is part of the formatting
+        # Edits the line containing the current pack
+        for i, line in enumerate(lines):
+            if line[:12] == "current pack":
+                lines[i] = f'current pack: {name}\n'
+
+        f.close()
+
+    # Overwrites the configs
+    with open("app-config.yaml", "w") as f:
+        for line in lines:
+            f.write(line)
+
+        f.close()
+
+if __name__ == "__main__":
+    # Loads the main app config file
+    app_config = load_main_config()
+
+    # This script provides a wrapper around the program for easy editing and use
+    clear()
+
+    # Gets file name
+    pack = input("Enter pack name: ")
+
+    file_name = f"packs/{pack}.yaml"
+
+    edit_configs_with_pack_name(file_name)
+
     print("")
 
-with open(file_name, "w+") as f:
-    for key, value in pack.items():
-        f.write(f"{key}:\n")
+    file_text = ""
 
-        if "produces" in value:
-            f.write(f"    produces: {value['produces']}\n\n")
+    # Gets the yaml file
+    pack = load_pack_config(file_name)
 
-        f.write("    items:\n")
+    while True:
+        # Gets the item to be produced
+        output = input("output: ").strip()
 
-        # this should work
-        items = value["items"] if "items" in value else value
+        # Command to potentially use
+        command = first_word(output)
 
-        for item in items:
-            f.write(f"        - {item}\n")
+        # Breaks the loop if needed
+        if output == "-r":
+            break
+        elif output == "-s": # Saves data
+            save_data(file_name)
+            print("Saved data!\n")
+            continue
+        elif command == "delete":
+            # Deletes an entry
+            item = get_remaining_words(output)
 
-        f.write("\n")
-    
+            if pack.has_recipe(item):
+                pack.delete_recipe(item)
+
+                print(f"Entry {item} deleted!\n")
+            else:
+                print(f"Entry {item} not found!\n")
+
+            continue
+        elif command == "check":
+            # Checks if an entry exists
+            item = get_remaining_words(output)
+
+            if pack.has_recipe(item):
+                try:
+                    print(f"Entry {item} found!\n")
+                    print(pack.get_recipe(item))
+                    print_without_recipes(item)
+                    print("")
+                except:
+                    pass
+            else:
+                print(f"Entry {item} not found!\n")
+
+            continue
+        elif command == "raw_material":
+            # Gets the material
+            material = get_remaining_words(output)
+
+            pack.add_raw_material(material)
+
+            print("")
+            continue
+        elif command == "raw_materials":
+            # Checks the raw materials
+            entry = pack.get_raw_materials()
+            print("Materials:", sorted(entry))
+            print("")
+
+            continue
+        elif command == "ae2_fluid":
+            # Gets the material
+            material = get_remaining_words(output)
+
+            pack.add_ae2_fluid(material)
+
+            print("")
+            continue
+        elif command == "ae2_fluids":
+            entry = pack.get_ae2_fluids()
+            print("AE2 Fluids:", sorted(entry))
+            print("")
+
+            continue
+        else:
+            output = make_item_stack(output)
+
+        # Gets the inputs (in comma delimited string form)
+        inputs = input("inputs: ")
+
+        # Splits the comma delimited inputs using regex
+        split_inputs = re.split(", *", inputs)
+
+        # Gets all of the inputs into the parsed form (remove failed items with empty names)
+        parsed_inputs = [i for i in [make_item_stack(i) for i in split_inputs] if i.get_item_name() != ""]
+
+        item_name = output.get_item_name()
+
+        # Sets the recipe for the pack
+        pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, parsed_inputs))
+
+        # Prints the items that don't have recipes
+        print_without_recipes(item_name)
+            
+        # The empty line is part of the formatting
+        print("")
+
+    save_data(file_name)
+        
