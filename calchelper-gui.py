@@ -350,7 +350,7 @@ class RecipeInputTextField(ft.TextField):
 # This class represents a recipe output
 class RecipeOutputItem(ft.Container):
     # is_checked says if the output item was created when checking recipes
-    def __init__(self, item_name, pack, config, is_checked=False):
+    def __init__(self, item_name, pack, config: MainConfigFile, is_checked=False):
         super().__init__()
         self.margin = 0
         
@@ -373,7 +373,7 @@ class RecipeOutputItem(ft.Container):
         ])
 
         # Adds the items included in parts of the recipe which do not have recipes
-        if config.should_print_items_without_recipes():
+        if config.print_items_without_recipes:
             # All items used in the recipe
             unique_items = recipe.get_item_types()
 
@@ -384,7 +384,7 @@ class RecipeOutputItem(ft.Container):
             raw_materials = []
 
             # The raw materials to be displayed are not included in the missing elements
-            if config.should_display_raw_materials():
+            if config.display_raw_materials:
                 # Remove items already included in the recipe
                 raw_materials = [mat for mat in get_all_raw_materials(item_name, pack).difference(unique_items) if (not mat in materials) and mat != item_name]
 

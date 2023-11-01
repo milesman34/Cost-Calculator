@@ -10,7 +10,7 @@ When using, make sure to separate your inputs with spaces. They should be in the
 
 If `use_already_has_items` is enabled in the config, it will ask the user how much of relevant materials they have. This is used to figure out how many items they actually need to get or produce.
 
-After everything is inputted, the program will output what materials you need to collect in order to craft the items listed. It will also show the amount of microcrafting needed.
+After everything is inputted and the stop command `-r` is entered, the program will output what materials you need to collect in order to craft the items listed. It will also show the amount of microcrafting needed. 
 
 # Config Format
 

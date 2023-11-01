@@ -1,9 +1,3 @@
-# Commands that tell the app to stop accepting input and switch to the next phase
-# Default: "-r", "--run"
-stop commands:
-  - "-r"
-  - "--run"
-
 # Should the cost calculator get items the player already has?
 # Default: false
 use already has items: false

@@ -45,7 +45,7 @@ def get_all_raw_materials(_item):
 def print_without_recipes(item):
     print("")
 
-    if app_config.should_print_items_without_recipes():
+    if app_config.print_items_without_recipes:
         recipe = pack.get_recipe(item)
 
         # All items used in the recipe
@@ -57,7 +57,7 @@ def print_without_recipes(item):
         print(f"Missing: {[item2 for item2 in sorted(unique_items) if not (pack.has_recipe(item2) or item2 in materials)]}")
 
         # The raw materials to be displayed are not included in the missing elements
-        if app_config.should_display_raw_materials():
+        if app_config.display_raw_materials:
             # Remove items already included in the recipe
             raw_materials = [mat for mat in get_all_raw_materials(item).difference(unique_items) if (not mat in materials) and mat != item]
 

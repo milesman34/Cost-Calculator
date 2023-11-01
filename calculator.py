@@ -118,26 +118,26 @@ class App:
         self.config = load_main_config()
 
         # Gets the pack listed in the config
-        self.pack = load_pack_config(self.config.get_current_pack())
+        self.pack = load_pack_config(self.config.current_pack)
 
         # Gets the list of addons
-        self.addons = [load_pack_config(addon) for addon in self.config.get_addons()]
+        self.addons = [load_pack_config(addon) for addon in self.config.addons]
 
         # Extends the pack with any addons
         for addon in self.addons:
             self.pack.extend_pack(addon)
 
         # Gets other config options
-        self.stop_commands = set(self.config.get_stop_commands())
-        self.use_already_has_items = self.config.should_use_preexisting_items()
+        self.use_preexisting_items = self.config.use_preexisting_items
+        """Should the cost calculator ask for items the user already has?"""
 
-        self.skip_resources = self.config.should_skip_asking_existing_resources()
+        self.skip_resources = self.config.skip_resources
 
-        self.show_left_over_amount = self.config.should_show_left_over_amount()
+        self.show_left_over_amount = self.config.show_left_over_amount
 
-        self.use_alt_sorting_method = self.config.should_use_alternate_sorting_method()
+        self.use_alt_sorting_method = self.config.use_alt_sorting_method
 
-        self.show_crafting_bytes = self.config.should_show_crafting_bytes()
+        self.show_crafting_bytes = self.config.show_crafting_bytes
 
         # Stuff that isn't set immediately
         self.user_items: Dict[str, int] = {}
@@ -191,7 +191,7 @@ class App:
             current_input = input("> ").strip()
 
             # When the user inputs a stop command, it stops getting items
-            if current_input in self.stop_commands:
+            if current_input == "-r":
                 break
 
             # Skip blank lines
@@ -223,7 +223,7 @@ class App:
             if item_type not in self.already_has_items and item_type not in self.items_asked_about:
                 self.items_asked_about.append(item_type)
 
-                if self.config.should_skip_asking_existing_resources() and not first_items:
+                if self.skip_resources and not first_items:
                     items_dict[item_type] = 0
                 else:
                     string_amount = input(f"How many {item_type}? ")
@@ -355,7 +355,7 @@ class App:
                     new_items[item.get_item_name()] += item.get_amount()
 
             # Gets items the user already has
-            if self.config.should_use_preexisting_items():
+            if self.use_preexisting_items:
                 self.already_has_items = app.get_already_has_items(
                     [item_name for item_name, _ in new_items.items()], first_items=False)
 
@@ -637,7 +637,7 @@ src="https://code.jquery.com/jquery-3.6.1.js"
         self.user_items = self.get_items_from_user()
         starting_items = self.user_items.copy()
 
-        if self.use_already_has_items:
+        if self.use_preexisting_items:
             # Gets items the user already has by using the list the user has
             # provided
             self.already_has_items = self.get_already_has_items(
@@ -655,7 +655,7 @@ src="https://code.jquery.com/jquery-3.6.1.js"
         self.print_results(results)
 
         # Should it produce html?
-        if self.config.should_produce_html_output():
+        if self.config.html_output:
             self.write_html(starting_items)
 
         self.evaluated_items = {}
