@@ -1,5 +1,6 @@
 import collections, math, os, platform, sys, yaml
-from typing import Any, Dict, List
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set
 
 
 YAML_Data = Dict[str, Any]
@@ -90,20 +91,22 @@ class MainConfigFile:
         """Should the cost calculator display how many bytes AE2 would need to calculate the craft? (Assume that for fluids, 1000 mb of the fluid is treated as one item, this can also apply to life essence, demon will, essentia, or other things)"""
         
 
-# Loads the main config file
-def load_main_config():
+def load_main_config() -> MainConfigFile:
+    """Loads the main config file from the path it is located at, returning a MainConfigFile instance."""
     return MainConfigFile(load_config_file("app-config.yaml"))
 
-# Class representing a pack config file
-class PackConfigFile:
-    # Pass the yaml file from load_config_file
-    def __init__(self, yaml_file):
-        self.items = {}
 
-        if yaml_file is not None: # confirm the pack exists
-            for key, value in yaml_file.items():
-                if len(value["items"]) > 0: # can't have recipe with no inputs
-                    self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
+class PackConfigFile:
+    """Class representing a recipe pack configuration file."""
+    # Pass the yaml file from load_config_file
+    def __init__(self, yaml_file: YAML_Data):
+        """When creating a PackConfigFile, pass in the results of load_config_file called with the path to the pack's config file."""
+        self.items: Dict[str, CraftingRecipe] = {}
+        """This dict maps the names of items to a CraftingRecipe for that item."""
+
+        for key, value in yaml_file.items():
+            if len(value["items"]) > 0: # can't have recipe with no inputs
+                self.items[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
 
     # Returns if the pack has a recipe for an item
     def has_recipe(self, item):
@@ -181,181 +184,220 @@ class PackConfigFile:
         else:
             return 0
 
-# Loads a pack config file
-def load_pack_config(path):
+
+def load_pack_config(path: str) -> PackConfigFile:
+    """Loads a pack config file from the path provided, creating a new PackConfigFile instance. If the file doesn't exist yet, it creates a blank file."""
     return PackConfigFile(load_config_file(path, True))
 
-# Class representing a crafting recipe in a pack
+
 class CraftingRecipe:
-    def __init__(self, output, inputs, produces=1):
+    """Class representing a crafting recipe for the cost calculator to use."""
+    def __init__(self, output: str, inputs: List["ItemStack"], amount_produced: int=1):
         self.output = output
-        self.produces = produces
+        """What type of item does the recipe produce?"""
+        
+        self.amount_produced = amount_produced
+        """How many of that item does the recipe produce? (defaults to 1)"""
 
-        self.inputs = []
+        self.inputs: List[ItemStack] = []
+        """List of items (as an ItemStack) used for the recipe."""
 
+        # Create a dictionary to count up how much each item appears
         inputs_dict = collections.defaultdict(int)
 
         # it does some processing for the inputs to add together cases where it calls for the same item twice
         for stack in inputs:
-            name = stack.get_item_name()
-            amount = stack.get_amount()
+            inputs_dict[stack.name] += stack.amount
 
-            inputs_dict[name] += amount
-
+        # Now iterate over each entry in the defaultdict to create the new ItemStacks
         for name, amount in inputs_dict.items():
             self.inputs.append(ItemStack(name, amount))
 
-        # Depth is used for calculation, let's set to 0 for now
+        # Just set the depth to 0 for now.
         self.depth = 0
+        """The depth value is used for calculation purposes."""
 
-    def __repr__(self):
-        return f"{self.produces} {self.output}: {self.get_input_repr()}"
+    def __repr__(self) -> str:
+        return f"{self.amount_produced} {self.output}: {self.get_input_repr()}"
 
-    # Gets a sorted representation of the inputs
-    def get_input_repr(self):
-        return ", ".join([str(i) for i in sorted(self.inputs, key=lambda i: i.get_item_name())])
+    def get_input_repr(self) -> str:
+        """Returns a string representation of the inputs, sorted by the item name."""
+        return ", ".join([str(i) for i in sorted(self.inputs, key=lambda i: i.name)])
 
-    # Gets a set of all item types needed
-    def get_item_types(self):
-        return set([item.get_item_name() for item in self.inputs])
+    def get_item_types(self) -> Set[str]:
+        """Returns a set of all the types of items used in the recipe."""
+        return set([item.name for item in self.inputs])
 
-    # Gets the output of a recipe
-    def get_output(self):
-        return self.output
+    def get_output_itemstack(self) -> "ItemStack":
+        """Returns an ItemStack representing the output of the recipe."""
+        return ItemStack(self.output, self.amount_produced)
 
-    # Gets the inputs of a recipe
-    def get_inputs(self):
-        return self.inputs
+    @staticmethod
+    def create_with_itemstack(output: "ItemStack", inputs: List["ItemStack"]) -> "CraftingRecipe":
+        """Creates a recipe using an output ItemStack and a list of ItemStacks as inputs."""
+        return CraftingRecipe(output.name, inputs, output.amount)
 
-    # Gets how much of the item the recipe produces
-    def get_amount_produced(self):
-        return self.produces
 
-    # Gets an itemstack for the output
-    def get_output_itemstack(self):
-        return ItemStack(self.output, self.produces)
-
-    # Creates a recipe using the output ItemStack and inputs
-    def create_with_itemstack(output, inputs):
-        return CraftingRecipe(output.get_item_name(), inputs, output.get_amount())
-
-    # Gets the recipe depth
-    def get_depth(self):
-        return self.depth
-
-    # Sets the recipe depth
-    def set_depth(self, depth):
-        self.depth = depth
-
-# Class representing a stack of items
 class ItemStack:
-    def __init__(self, item, amount=1, depth=0):
-        self.item = item
+    """The ItemStack class represents a stack of items for calculation, which has an item name and an amount."""
+    def __init__(self, name: str, amount: int=1, depth: int=0):
+        self.name = name
+        """What item the ItemStack represents."""
+        
         self.amount = amount
+        """How much of the item is in the ItemStack."""
 
-        # Depth can be used for ItemStacks for calculation purposes
         self.depth = depth
+        """The depth value is used for calculation purposes."""
 
-    def __repr__(self):
-        return f"{self.amount} {self.item}"
+    def __repr__(self) -> str:
+        return f"{self.amount} {self.name}"
 
-    # Converts it to a string representation for displaying (separate from __repr__)
-    def get_display_string(self):
-        return f"{to_formatted_string(self.amount)} {self.item}"
+    def get_display_string(self) -> str:
+        """Converts the ItemStack to a string representation for displaying (separate from __repr__)."""
+        return f"{to_formatted_string(self.amount)} {self.name}"
 
-    # Gets the name of the item
-    def get_item_name(self):
-        return self.item
 
-    # Gets the item amount
-    def get_amount(self):
-        return self.amount
-
-    # Gets the depth of the item within a recipe
-    def get_depth(self):
-        return self.depth
-
-    # Adds to the amount of the item
-    def add_amount(self, amount):
-        self.amount += amount
-
-# Gets an item stack from a string
-def make_item_stack(string: str):
+def make_item_stack(string: str) -> ItemStack:
+    """Creates an ItemStack from a string."""
     amount = first_word(string)
 
     if amount.isnumeric():
         return ItemStack(get_remaining_words(string), int(amount))
     else:
         return ItemStack(string, 1)
+    
+ 
+@dataclass   
+class TrieNode:
+    """The TrieNode class represents a node in a Trie."""
+    amount: int
+    """How many times has the character appeared in this position?"""
+    
+    next: Optional["Trie"]
+    """What Trie does this node point to?"""
 
-# This Trie powers the auto-complete system
+
 class Trie:
+    """The Trie class lets you build an auto-complete system by storing how characters map to how many times they appear."""
     def __init__(self):
         # it will have a dict of characters which map to the amount of times that character appeared in that position, as well as either another Trie or None
-        self.characters = {}
+        self.characters: Dict[str, TrieNode] = {}
+        """The characters dict maps a character to a TrieNode."""
 
         self.total_words = 0
+        """How many total words were added to this Trie? Can apply to duplicates."""
 
-        # set of completed words to use
-        self.words = set()
+        self.words: Set[str] = set()
+        """Set of completed words that can be used for predictions."""
 
-    def add_word(self, word, multi=1):
+    def add_word(self, word: str, multiplier: int=1):
+        """Adds a word to the Trie. The optional multiplier parameter determines how many times the word should be added."""
         self.words.add(word)
 
         # this is recursive and uses multiple tries, so we start with the base case
         ch = word[0]
 
-        self.total_words += 1
+        self.total_words += multiplier
 
         if len(word) == 1:
             if ch in self.characters:
-                self.characters[ch] = (self.characters[ch][0] + multi, self.characters[ch][1])
+                current = self.characters[ch]
+                self.characters[ch] = TrieNode(current.amount + multiplier, current.next)
             else:
-                self.characters[ch] = (multi, None)
+                self.characters[ch] = TrieNode(multiplier, None)
         else:
             if ch in self.characters:
-                new_amt = self.characters[ch][0] + 1
-                new_trie = Trie() if self.characters[ch][1] is None else self.characters[ch][1]
-                new_trie.add_word(word[1:], multi)
-                self.characters[ch] = (new_amt, new_trie)
+                current = self.characters[ch]
+                
+                new_trie = Trie() if current.next is None else current.next
+                
+                # The function is called recursively with the rest of the word
+                new_trie.add_word(word[1:], multiplier)
+                
+                self.characters[ch] = TrieNode(
+                    current.amount + multiplier,
+                    new_trie
+                )
             else:
                 new_trie = Trie()
-                new_trie.add_word(word[1:], multi)
-                self.characters[ch] = (1, new_trie)
+                new_trie.add_word(word[1:], multiplier)
+                
+                self.characters[ch] = TrieNode(multiplier, new_trie)
 
     # This now attempts to predict a word based on the given text (use the amount of words, track the number of times this word has appeared too, words represents the set of words, current represents the current string)
-    def predict_word(self, word, num_words=-1, words=None, current="", starting_word=None):
+    def predict_word(self, word: str, num_words: int=-1, words: Optional[Set[str]]=None, current: str="", starting_word: Optional[str]=None):
+        """Predicts a word from the Trie based on the characters provided so far.
+        
+        word refers to the characters provided so far.
+        
+        num_words refers to the number of total words in that part of the Trie, which can be passed as a parameter by recursive calls.
+        
+        words refers to the set of words in whichever Trie was originally used to call this function.
+        
+        current refers to the current word being constructed. It is used to predict a word, especially after the initial word is consumed.
+        
+        starting_word refers to what word was originally passed into the function."""
+        # Get the number of total words. It can either be passed as a parameter or can just be the total_words value.
         num_words = num_words if num_words >= 0 else self.total_words
+        
+        # Gets the set of words. It can either be passed as a parameter or can just be the words set in this Trie.
         words = self.words if words is None else words
+        
+        # Gets the starting word to work with. By default, it will be the word which is passed here.
         start = word if starting_word is None else starting_word
 
+        # This is the case where the word passed into the method is empty. This would be the base case.
         if len(word) == 0:
-            mx = max(self.characters.items(), key=lambda n: n[1][0])
+            # Find which of the characters corresponds to the TrieNode with the largest value.
+            max_char, max_char_node = max(self.characters.items(), key=lambda ch_entry: ch_entry[1].amount)
+            max_char_amt = max_char_node.amount
 
-            if current in words and mx[1][0] <= num_words - mx[1][0]:
+            # The current word passed in to this method is a word and the TrieNode corresponding to the character which appears the most is responsible for at least half of all words in this Trie.
+            # For example, if that TrieNode had a value of 5, compared to 8 total words in this Trie, then this condition would be true.
+            if current in words and max_char_amt <= num_words - max_char_amt:
+                # We found the starting word, so continue predicting from there.
                 if current == start:
-                    return mx[0] + mx[1][1].predict_word(word, mx[1][0], words=words, current=current + mx[0], starting_word=start)
+                    next_node = max_char_node.next
+                    
+                    # Python doesn't have a null coalescing operator, so just check if it is None
+                    if next_node is None: # next_node shouldn't be None, but just return an empty string in case
+                        return ""
+                    else:
+                        return max_char + next_node.predict_word(word, max_char_amt, words=words, current=current + max_char, starting_word=start)
                 else:
+                    # We found a word which makes up the majority of the words at this part of the Trie, so don't return any more characters and let the function calls higher up return the word.
                     return ""
-            elif mx[1][1] is None:
-                return mx[0]
+            # The character that appears the most doesn't have any Trie connected to it, so just return that character
+            elif max_char_node.next is None:
+                return max_char
             else:
-                return mx[0] + mx[1][1].predict_word(word, mx[1][0], words=words, current=current + mx[0], starting_word=start)
+                # Standard recursive case
+                return max_char + max_char_node.next.predict_word(word, max_char_amt, words=words, current=current + max_char, starting_word=start)
 
+        # We need to work with the first character of the word
         ch = word[0]
 
+        # There are no words in the Trie which this word can be used to make.
         if ch not in self.characters:
             return ""
         else:
-            if self.characters[ch][1] is None:
+            current_node = self.characters[ch]
+            
+            # The current node does not have any more words, so just predict that character
+            if current_node.next is None:
                 return ch
 
-            nxt = self.characters[ch][1].predict_word(word[1:], self.characters[ch][0], words=words, current=current + ch, starting_word=start)
+            # Predict the next word using the Trie connected to the character's node, passing all but the first character of the current word that was passed into the function.
+            nxt = current_node.next.predict_word(word[1:], current_node.amount, words=words, current=current + ch, starting_word=start)
 
+            # Case where the function could not predict a word
             if nxt == "":
                 return ""
             else:
+                # Case where it could predict a word, just return the new string.
                 return ch + nxt
             
-    def __repr__(self):
+    def __repr__(self) -> str:
+        # The __repr__ function does work recursively
         return ", ".join([f"{k}: {v}" for k, v in self.characters.items()])
