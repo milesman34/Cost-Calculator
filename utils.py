@@ -1,4 +1,5 @@
 import collections, math, os, platform, sys, yaml
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
@@ -54,6 +55,11 @@ def to_formatted_string(num: int) -> str:
     return str(num) if num < 1e6 else f"{num} ({to_exponent_string(num)})"
 
 
+def sanitize_input_string(input_string: str) -> str:
+    """Sanitizes the input string, removing leading, trailing, and excess spaces."""
+    return re.sub(r" {2,}", " ", input_string).strip()
+
+
 class MainConfigFile:
     """MainConfigFile is a class representing the main app-config.yaml file."""
     
@@ -85,7 +91,7 @@ class MainConfigFile:
         """Should the cost calculator display how many of an item are left over after crafting?"""
         
         self.use_alt_sorting_method: bool = yaml_file["use alternate sorting depth method"]
-        """Should the cost calculator use the alternate method for sorting the depths of items based on the item it is used to craft that has the lowest depth."""
+        """Should the cost calculator use the alternate method for sorting the depths of items based on the item it is used to craft that has the lowest depth?"""
         
         self.show_crafting_bytes: bool = yaml_file["show crafting bytes"]
         """Should the cost calculator display how many bytes AE2 would need to calculate the craft? (Assume that for fluids, 1000 mb of the fluid is treated as one item, this can also apply to life essence, demon will, essentia, or other things)"""
@@ -110,15 +116,14 @@ class PackConfigFile:
                 # We also need to make an item stack for everything in the yaml key "items"
                 self.recipes[key] = CraftingRecipe(key, [make_item_stack(item) for item in value["items"]], 1 if "produces" not in value else value["produces"])
 
-    def has_recipe(self, name: str) -> bool:
-        """Returns if the recipe pack has a recipe for an item."""
-        return name in self.recipes
-
     def delete_recipe(self, item: str):
         """Deletes the recipe outputting the given item from the pack."""
         del self.recipes[item]
+        
+    def has_recipe(self, item: str) -> bool:
+        """Returns if the pack has a recipe for the item with the given name."""
+        return item in self.recipes
 
-    # Gets the recipe for an item if it exists
     def get_recipe(self, item: str) -> Optional["CraftingRecipe"]:
         """Returns the recipe that produces the given item if said recipe exists, otherwise returning None."""
         if self.has_recipe(item):
@@ -170,13 +175,17 @@ class PackConfigFile:
     def get_recipes_iterable(self) -> Iterator[Tuple[str, "CraftingRecipe"]]:
         """Returns a key/value (item_name, recipe) iterable for all of the recipes in the pack."""
         return iter(self.recipes.items())
+    
+    def get_recipes_list(self) -> List["CraftingRecipe"]:
+        """Returns a list of all the CraftingRecipe items in the pack."""
+        return list(self.recipes.values())
 
     def extend_pack(self, addon: "PackConfigFile"):
         """Extends the pack with an addon (another PackConfigFile), adding and/or replacing recipes as needed."""
         for item, recipe in addon.get_recipes_iterable():
             self.set_recipe(item, recipe)
 
-    def get_recipe_depth(self, item):
+    def get_recipe_depth(self, item: str):
         """Gets the depth of the recipe for an item, if it exists. If the recipe does not exist, it returns 0."""
         recipe = self.get_recipe(item)
         
