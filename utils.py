@@ -1,22 +1,34 @@
 import collections, math, os, platform, sys, yaml
+from typing import Any, Dict
+
+
+YAML_Data = Dict[str, Any]
+"""Type that represents a YAML file. Since we do not know more about the typing, it has a general type."""
+
 
 clear_command = "cls" if platform.system() == "Windows" else "clear"
+"""What command to call to clear the screen. cls is for Windows, clear is for Unix."""
+
 
 # Clears the screen
 def clear():
+    """Clears the screen. Which command is used depends on the OS."""
     os.system(clear_command)
 
+
 # This file contains some utility functions to help make the codebase cleaner
-# Gets the first word from a string
 def first_word(string: str) -> str:
+    """Gets the first word from a string."""
     return string.split(" ")[0]
 
-# Gets all words but the first from a string and joins them into a sentence
+
 def get_remaining_words(string: str) -> str:
+    """Gets all of the remaining words (except the first) from a string and joins them into a new string."""
     return " ".join(string.split(" ")[1:])
 
-# Loads a YAML config file (create parameter tells you if you should create the file if it doesn't exist)
-def load_config_file(path: str, create: bool=False):
+
+def load_config_file(path: str, create: bool=False) -> YAML_Data:
+    """Loads a YAML config file from the path provided. The optional create parameter allows you to have it create the file if it doesn't already exist."""
     # Creates file if it does not exist
     if not os.path.exists(path):
         if create:
@@ -28,8 +40,9 @@ def load_config_file(path: str, create: bool=False):
     with open(path, "r+") as file:
         return yaml.safe_load(file)
 
-# Gets an exponent form of an int
-def to_exponent(num: int):
+
+def to_exponent(num: int) -> str:
+    """Returns an exponential formatted string form of a number, such as 1.25e7."""
     powers = int(math.log10(num))
 
     return f"{round(num / (10 ** powers), 2)}e{powers}"
