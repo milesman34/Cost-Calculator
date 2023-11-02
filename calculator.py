@@ -16,27 +16,6 @@ def delete_zero_values(dict: Dict[T, int]) -> Dict[T, int]:
     return {key: value for key, value in dict.items() if value != 0}
 
 
-def subtract_dictionaries(
-        target: Dict[T, int], subtracter: Dict[T, int]) -> Tuple[Dict[T, int], Dict[T, int]]:
-    """Subtracts 2 dictionaries from each other. The first dictionary will have its values subtracted from by the values of the second dictionary. It returns both dictionaries after modifying them, so that they can be used later. Any keys with a value of zero are removed."""
-    for key, value in subtracter.items():
-        if key in target:
-            # The dictionaries have a common key, which will be compared to determine what to do next
-            if value > target[key]:
-                # The subtracter has a higher value for this key than the target, so it gets to keep this key
-                subtracter[key] -= target[key]
-
-                # Sets key to zero instead of deleting it so it can delete it later
-                target[key] = 0
-            else:
-                # The target has a higher value for this key than the subtracter, so it gets to keep this key
-                target[key] -= value
-                subtracter[key] = 0
-
-    # Deletes all values of zero from the dictionaries
-    return delete_zero_values(target), delete_zero_values(subtracter)
-
-
 A = TypeVar("A")
 B = TypeVar("B")
 
@@ -167,12 +146,6 @@ class App:
             self.pack.extend_pack(addon)
 
         # Gets other config options
-        self.use_preexisting_items = self.config.use_preexisting_items
-        """Should the cost calculator ask for items the user already has?"""
-
-        self.skip_resources = self.config.skip_resources
-        """Should the cost calculator avoid asking for sub-resources (further down the crafting chain) that the player already has if use_preexisting_items is enabled?"""
-
         self.show_left_over_amount = self.config.show_left_over_amount
         """Should the cost calculator display how many of an item are left over after crafting?"""
 
@@ -246,36 +219,6 @@ class App:
 
         # Returns a new dictionary using the items in the counter
         return delete_zero_values(dict(items_counter))
-
-    def get_preexisting_items(self,
-                              item_names: Set[str],
-                              first_items: bool = True) -> Dict[str, int]:
-        """Gets a list of the items that the user already has. item_types refers to the items it could ask about. first_items tracks if it was called from the top layer of the app (not recursively)."""
-        items_dict: Dict[str, int] = {}
-
-        if first_items:
-            print("Enter items you already have:\n")
-
-        for name in item_names:
-            # It does not want to ask about the same item type twice
-            if name not in self.preexisting_items and name not in self.preexisting_items_asked_about:
-                self.preexisting_items_asked_about.add(name)
-
-                # If first_items is False then it means we are further down the crafting tree, so it won't ask the user about these items.
-                if self.skip_resources and not first_items:
-                    items_dict[name] = 0
-                else:
-                    string_amount = input(f"How many {name}? ")
-
-                    amount = int(string_amount) if string_amount.isnumeric() else 0
-
-                    items_dict[name] = amount
-
-        # When adding the dictionaries together (both the preexisting items and the new items the user has), remove any keys whose values are 0
-        return delete_zero_values(
-            add_dictionaries(
-                self.preexisting_items,
-                items_dict))
 
     def load_recipes(self):
         """Loads all of the recipes from the current pack, setting their depth as required."""
@@ -383,13 +326,6 @@ class App:
             for depth_items in depth_dictionary.values():
                 for item in depth_items:
                     new_items[item.name] += item.amount
-
-            # Gets preexisting items from the user if that config option is enabled
-            if self.use_preexisting_items:
-                self.preexisting_items = self.get_preexisting_items(set(new_items.keys()), first_items=False)
-
-                # Subtracts the new preexisting items from the requirements
-                new_items, self.preexisting_items = subtract_dictionaries(new_items, self.preexisting_items)
 
             return self.calculate_costs(new_items)
 
@@ -675,13 +611,6 @@ src="https://code.jquery.com/jquery-3.6.1.js"
         # Start by getting the items to use from the user
         self.user_items = self.get_items_from_user()
         starting_items = self.user_items.copy()
-
-        if self.use_preexisting_items:
-            # Gets items the user already has by using the list the user has provided
-            self.preexisting_items = self.get_preexisting_items(set(self.user_items.keys()))
-
-            # Subtracts items the user already has from the original items
-            self.user_items, self.preexisting_items = subtract_dictionaries(self.user_items, self.preexisting_items)
 
         # Loads the pack's recipes
         self.load_recipes()

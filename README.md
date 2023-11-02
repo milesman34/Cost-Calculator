@@ -8,8 +8,6 @@ To run the GUI version, you need flet installed. You can install flet using `pyt
 
 When using, make sure to separate your inputs with spaces. They should be in the format `amount item_type`, where `amount` is an `int` and `item_type` is a `str`. The amount should also not be a negative number or a decimal.
 
-If `use preexisting items` is enabled in the config, it will ask the user how much of relevant materials they have. This is used to figure out how many items they actually need to get or produce.
-
 After everything is inputted and the stop command `-r` is entered, the program will output what materials you need to collect in order to craft the items listed. It will also show the amount of microcrafting needed. 
 
 # Config Format

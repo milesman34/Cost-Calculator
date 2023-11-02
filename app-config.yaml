@@ -1,24 +1,16 @@
-# Should the cost calculator get items the user already has?
-# Default: false
-use preexisting items: false
-
 # Current pack to use
 # Default: "packs/example.yaml"
-current pack: packs/newtest.yaml
+current pack: packs/example.yaml
 
 # Addons to use (will be loaded along with the current pack)
 addons: [
 ]
 
-# Skip asking for sub-resources the user already has?
-# Default: true
-skip resources: true
-
 # Print items in calchelper that don't have recipes
 # Default: true
 print items without recipes: true
 
-# Display all raw materials after using calchelper and/or using check
+# Display all raw materials further down the crafting tree after using calchelper and/or using check
 # Default: true
 display all raw materials: true
 

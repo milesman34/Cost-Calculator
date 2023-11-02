@@ -66,17 +66,11 @@ class MainConfigFile:
     def __init__(self, yaml_file: YAML_Data):
         """When creating the MainConfigFile instance, pass in the results of load_config_file called with the app-config.yaml path."""
         # Gets all data from the file
-        self.use_preexisting_items: bool = yaml_file["use preexisting items"]
-        """Should the cost calculator ask for items the user already has?"""
-        
         self.current_pack: str = yaml_file["current pack"]
         """What recipe pack is the cost calculator using (as a file path)?"""
         
         self.addons: List[str] = yaml_file["addons"]
         """What additional recipe packs should be loaded along with the main recipe pack (as a list of file paths)?"""
-        
-        self.skip_resources: bool = yaml_file["skip resources"]
-        """Should the cost calculator avoid asking for sub-resources (further down the crafting chain) that the player already has if use_preexisting_items is enabled?"""
         
         self.print_items_without_recipes: bool = yaml_file["print items without recipes"]
         """Should calchelper display all items as part of the recipe that don't have recipes after adding/checking a recipe?"""
