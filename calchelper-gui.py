@@ -1,65 +1,82 @@
+from enum import Enum
+from typing import Callable
 import flet as ft
 import calchelper as ch
-import os, re, yaml
+import re
+
 
 from utils import *
 
-# Wraps an object in a container with an expand entry
-def wrap_expand(obj, exp):
+
+def wrap_expand(obj: Optional[ft.Control], exp: int) -> ft.Control:
+    """Wraps an object in a Container with an expand entry (numerical value)."""
     return ft.Container(obj, expand=exp)
 
-# Wraps an object in a row/column combination to center it
-def center_object(obj):
+
+def center_object(obj: ft.Control):
+    """Wraps an object in a row/column combination to center it."""
     return ft.Column([
         ft.Row([
             obj
         ], expand=True, alignment=ft.MainAxisAlignment.CENTER)
     ], expand=True, alignment=ft.MainAxisAlignment.CENTER)
+    
+    
+class RecipeLoopError(Exception):
+    """RecipeLoopError is raised when a recipe loop is detected when working with get_all_raw_materials."""
+    def __init__(self, name: str):
+        self.name = name
+        """Name of the item which caused the error."""
+        
+        super().__init__(f"RecipeLoopError with item {name}")
 
-# Modified version of get_all_raw_materials for this program
-def get_all_raw_materials(_item, pack):
-    cache = {}
 
-    def get_all_raw_materials2(item):
+def get_all_raw_materials(_item: str, pack: PackConfigFile) -> Set[str]:
+    """Modified version of get_all_raw_materials for this program, works similarly to the version in calchelper.py. Raises a RecipeLoopError if a recipe loop is detected."""
+    cache: Dict[str, Set[str]] = {}
+
+    # Recursive helper function which is memoized
+    def get_all_raw_materials2(item: str) -> Set[str]:
         try:
-            if item not in cache:
-                result = set()
-
-                if pack.has_recipe(item):
-                    for item2 in pack.get_recipe(item).get_item_types():
-                        result.update(get_all_raw_materials2(item2))
-                else:
+            if item in cache:
+                return cache[item]
+            else:
+                result: Set[str] = set()
+                
+                recipe = pack.get_recipe(item)
+                
+                if recipe is None:
                     result.add(item)
+                else:
+                    for item2 in recipe.get_item_types():
+                        result.update(get_all_raw_materials2(item2))
 
                 cache[item] = result
                 return result
-            else:
-                return cache[item]
         except:
-            print(f"RecursionError with item {item}")
-            gstate.recursion_error = True
-            gstate.recursion_item = item
-            return set()
+            print(f"RecipeLoopError with item {item}")
+            raise RecipeLoopError(item)
 
     return get_all_raw_materials2(_item)
 
-# This class represents some global state
+
 class GlobalState:
+    """GlobalState is used to pass the file_name or any other global variables which have to be passed between the LaunchScreen and the actual app."""
     def __init__(self):
         self.file_name = ""
-
-        # Was a recursion error committed?
-        self.recursion_error = False
-        self.recursion_item = None
-
+        """Name of the pack file."""
+        
+        
 gstate = GlobalState()
 
-# This class represents the launch screen (picking a pack)
+
 class LaunchScreen(ft.UserControl):
-    def __init__(self, page):
+    """This class represents the LaunchScreen, for picking a recipe pack to edit."""
+    def __init__(self, page: ft.Page):
         super().__init__()
 
-        self.page = page
+        self.page: ft.Page = page
+        """The current page being used."""
 
     def build(self):
         self.pack_input = ft.TextField(autofocus=True, on_submit=self.confirm, expand=1)
@@ -79,12 +96,20 @@ class LaunchScreen(ft.UserControl):
             spacing=25
         )
 
-    # confirms the selected pack
     def confirm(self, e):
-        gstate.file_name = f"packs/{self.pack_input.value.lower().strip()}.yaml"
-        ch.edit_configs_with_pack_name(gstate.file_name)
+        """Confirms the chosen pack and saves it to the file, then moving to the next part of the application."""
+        value = self.pack_input.value
+        
+        if value is None:
+            return
+        else:
+            gstate.file_name = f"packs/{sanitize_input_string(value.lower())}.yaml"
+            
+            # We call the method from calchelper.py to edit the pack file
+            ch.edit_configs_with_pack_name(gstate.file_name)
 
-        self.page.window_close()
+            # Close the parent window, the program is synchronous so it won't open the next window until this one is finished.
+            self.page.window_close()
 
 # # This class represents a button in the tab switcher system
 # class TabSwitcherButton(ft.FilledTonalButton):
@@ -139,25 +164,30 @@ class LaunchScreen(ft.UserControl):
 #             spacing=5
 #         )
 
-# This class represents a button for the bottom save/quit bar
+
 class BottomBarButton(ft.Container):
-    def __init__(self, text, onclick):
+    """BottomBarButton represents a button for the bottom save/quit bar."""
+    def __init__(self, text: str, onclick: Callable):
+        """Text is displayed on the button, onclick is called when the button is pressed."""
         super().__init__()
 
         self.content = center_object(
             ft.Text(text, text_align=ft.TextAlign.CENTER, color=ft.colors.BLACK)
         )
+        """Main content for the button."""
 
         self.expand = True
         self.on_click = onclick
+        """This method is called when the button is clicked."""
+        
         self.bgcolor = ft.colors.BLUE_300
         self.margin = 0
 
         # current onhover value
         self.on_hover = self.on_hover_event
 
-    # Reacts to hover events
     def on_hover_event(self, e):
+        """Reacts to hover events."""
         # we need to change the background color then
         if e.data == "true":
             self.bgcolor = ft.colors.BLUE_200
@@ -165,17 +195,29 @@ class BottomBarButton(ft.Container):
             self.bgcolor = ft.colors.BLUE_300
 
         self.update()
+        
+        
+class InputTextState(Enum):
+    """InputTextState enum represents a possible state for the RecipeInputTextField, either asking for an output or inputs."""
+    OUTPUT = 0,
+    INPUTS = 1
 
-# This class represents the recipe input text field
+
 class RecipeInputTextField(ft.TextField):
-    def __init__(self, parent):
+    """RecipeInputTextField represents the text field for inputting recipes."""
+    def __init__(self, parent: "Calchelper"):
         super().__init__()
 
         self.expand = 2
 
         self.parent = parent
+        """Reference to the Calchelper app."""
 
         self.label = "Enter Output"
+        """The label can change based on what is being done with the text field."""
+        
+        self.text_state = InputTextState.OUTPUT
+        """Current state of the text field."""
 
         self.color = ft.colors.BLACK
         self.focused_color = ft.colors.BLACK
@@ -191,8 +233,9 @@ class RecipeInputTextField(ft.TextField):
 
         self.on_submit = self.on_submit_fn
 
-        # track the current output
-        self.output_item = ""
+        # This is used to track which output item is being produced, but for now just set it as a default value.
+        self.output_item = ItemStack("", 0)
+        """What item will the recipe produce?"""
 
         self.on_change = self.on_change_fn
 
@@ -204,164 +247,209 @@ class RecipeInputTextField(ft.TextField):
 
         # Generate the trie based on the pack
         self.pack = self.parent.pack
+        """PackConfigFile to use."""
 
         self.trie = Trie()
+        """The Trie is used for the auto-complete feature based on the recipes in the pack."""
 
-        for item, recipe in self.pack.items.items():
+        for item, recipe in self.pack.get_recipes_iterable():
             # Start with the words from the output item
             for word in item.split(" "):
                 self.trie.add_word(word)
 
             # Now get the words from the input items
-            for item in recipe.get_inputs():
-                for word in item.get_item_name().split(" "):
+            for item in recipe.inputs:
+                for word in item.name.split(" "):
                     self.trie.add_word(word)
                     
-        # Set up autocomplete for ae2_fluid and raw_material
-        self.trie.add_word("ae2_fluid", 100)
-        self.trie.add_word("raw_material", 100)
+        # Set up autocomplete for ae2_fluid, raw_material, check, and delete to prioritize them
+        self.trie.add_word("ae2_fluid", 1000)
+        self.trie.add_word("raw_material", 1000)
+        self.trie.add_word("check", 1000)
+        self.trie.add_word("delete", 1000)
 
-    # Finds the index to use for auto-complete
-    def auto_complete_index(self, value):
+    def auto_complete_index(self, value: str) -> int:
+        """Finds the correct index to use for auto-complete."""
         index = len(value) - 1
 
+        # Just iterate from the end until we find an index that marks the gap between words
         while index >= 0:
-            if value[index] in ", ":
+            if value[index] in ", ": # Check for either a comma or space
                 break
             
             index -= 1
 
         return index + 1
 
-    # Function that runs when the text input is changed
     def on_change_fn(self, e):
+        """Function that runs when the text input is changed."""
         value = self.value
+        
+        if value is None:
+            return
 
         if len(value) == 0:
             self.suffix_text = ""
         else:
+            # Get the index to split at
             index = self.auto_complete_index(value)
 
+            # Find everything after the splitting index
             tmp_word = value[index:].strip()
 
-            if tmp_word == "":
+            if tmp_word == "": # Empty word, no need for prediction
                 self.suffix_text = ""
             else:
+                # Attempt to make a prediction
                 self.suffix_text = self.trie.predict_word(tmp_word)
+                
+        # Update the component
         self.update()
 
-    # Function that runs when the button is submitted
     def on_submit_fn(self, e):
-        value = self.value.strip()
+        """Function that runs when the text field is submitted."""
+        value = self.value
+        
+        if value is None:
+            return
 
-        if value == "":
+        if value.strip() == "":
             self.focus()
             return
 
-        # print("Submitted", value)
-
-        if self.label == "Enter Output":
-            # check for ae2_fluid or raw_material
-            val = self.value.lower().strip()
+        if self.text_state == InputTextState.OUTPUT: # It is currently asking for an output
+            # check for commands TODO: Add check and delete to this
+            val = sanitize_input_string(value.lower())
             
             words = val.split(" ")
             
-            # very hacky code to update that part of the UI
+            # The code for adding new raw materials or fluids via the text is much better now
             if words[0] == "raw_material":
-                md = self.parent.fluid_materials_manager
-                md2 = md.materials_modifier
+                # Start by getting the actual material
+                material = " ".join(words[1:])
                 
-                if md.material_toggle.content.text == "Fluids":
-                    md.material_toggle.handle_click(None)
+                fm_manager = self.parent.fluid_materials_manager
                 
-                md2.text_field.value = " ".join(words[1:])
-                md2.add_material(None, False)
+                fm_manager.set_state(FluidMaterialsState.MATERIALS)
+                
+                fm_manager.materials_modifier.add_material(material)
             elif words[0] == "ae2_fluid":
-                md = self.parent.fluid_materials_manager
-                md2 = md.fluid_modifier
+                # Start by getting the actual material
+                material = " ".join(words[1:])
                 
-                if md.material_toggle.content.text == "Raw Materials":
-                    md.material_toggle.handle_click(None)
+                fm_manager = self.parent.fluid_materials_manager
                 
-                md2.text_field.value = " ".join(words[1:])
-                md2.add_material(None, False)
+                fm_manager.set_state(FluidMaterialsState.FLUIDS)
+                
+                fm_manager.fluid_modifier.add_material(material)
+            elif words[0] == "check":
+                item = " ".join(words[1:])
+                
+                # Now check the recipe
+                self.parent.check_recipe(item)
+            elif words[0] == "delete":
+                item = " ".join(words[1:])
+                
+                # Now delete the recipe
+                self.parent.delete_recipe(item)
             else:
                 # get the output item from the text box
                 self.output_item = make_item_stack(val)
 
-                self.label = f"Enter Inputs for {self.output_item.get_item_name()}"
+                self.label = f"Enter Inputs for {self.output_item.name}"
+                self.text_state = InputTextState.INPUTS
         else:
             self.label = "Enter Output"
+            self.text_state = InputTextState.OUTPUT
 
             # get the input items from the textbox
-            inputs = [i for i in [make_item_stack(i) for i in re.split(", *", self.value)] if i.get_item_name() != ""]
+            inputs = [item for item in [make_item_stack(i) for i in re.split(", *", value)] if item.name != ""]
 
             self.create_recipe(self.output_item, inputs)
 
-            for word in self.output_item.get_item_name().split(" "):
+            for word in self.output_item.name.split(" "):
                 self.trie.add_word(word)
 
             for item in inputs:
-                for word in item.get_item_name().split(" "):
-                    self.trie.add_word(word)
+                for word in item.name.split(" "):
+                    if len(word) > 0:
+                        self.trie.add_word(word)
 
+        # Reset the textbox values after submitting
         self.value = ""
         self.suffix_text = ""
         self.focus()
 
         self.update()
 
-    # Adds words from an item
-    def add_words_from_item(self, word):
-        for word in word.split(" "):
+    def add_words_from_item(self, longer_word: str):
+        """Updates the internal Trie with the words from a longer word split by spaces."""
+        for word in longer_word.split(" "):
             self.trie.add_word(word)
 
         self.update()
 
-    # Creates a recipe
-    def create_recipe(self, output, inputs):
+    def create_recipe(self, output: ItemStack, inputs: List[ItemStack]):
+        """Creates a recipe using the output and inputs."""
         self.parent.create_recipe(output, inputs)
 
-    # Runs on tab press
     def on_tab_press(self):
+        """Function that runs when the tab key is pressed."""
         if self.focused:
-            if self.suffix_text == "":
-                if len(self.value.strip()) > 0:
+            # We still need the nullable checks here
+            value = self.value
+            suffix_text = self.suffix_text
+            
+            if value is None:
+                return
+            
+            if suffix_text is None or suffix_text == "": # no valid prediction being made by the Trie
+                if len(value.strip()) > 0:
                     self.focus()
 
                 return
 
             # let's find the index to replace
-            index = self.auto_complete_index(self.value)
+            index = self.auto_complete_index(value)
 
-            self.value = self.value[:index] + self.suffix_text
+            self.value = value[:index] + str(suffix_text)
 
             self.focus()
             self.update()
 
-    # Turns on the focused variable
     def turn_on_focus(self, e):
+        """Function that runs when the text field is focused (so that it doesn't try to auto-complete when working with other areas)."""
         self.focused = True
 
-    # Turns off the focused variable
     def turn_off_focus(self, e):
+        """Function that runs when the text field is no longer focused."""
         self.focused = False
 
-# This class represents a recipe output
+
 class RecipeOutputItem(ft.Container):
+    """RecipeOutputItem represents the text created in the RecipeOutput area for showing a recipe."""
     # is_checked says if the output item was created when checking recipes
-    def __init__(self, item_name, pack, config: MainConfigFile, is_checked=False):
+    def __init__(self, item_name: str, pack: PackConfigFile, config: MainConfigFile, is_checked: bool=False):
+        """is_checked parameter is whether this object was created from checking a recipe or not."""
         super().__init__()
         self.margin = 0
         
         # Gets the recipe
         recipe = pack.get_recipe(item_name)
+        
+        # We know that the recipe exists, so just raise an error since there isn't a particularly good way of dealing with it here.
+        if recipe is None:
+            raise ValueError("Recipe does not exist, this shouldn't happen!")
+        
+        # Get some key strings to display in the text
         itemstack = recipe.get_output_itemstack()
         inputs_repr = recipe.get_input_repr()
 
+        # The border only appears if we aren't checking a recipe
         if not is_checked:
             self.border = ft.border.only(top=ft.border.BorderSide(1, "black"))
 
+        # Creates the actual contents for the recipe
         self.content = ft.Column([
             ft.Row([
                 ft.Text(f"Produces {itemstack}", size=20, color=ft.colors.BLACK, expand=True)
@@ -385,77 +473,89 @@ class RecipeOutputItem(ft.Container):
 
             # The raw materials to be displayed are not included in the missing elements
             if config.display_raw_materials:
-                # Remove items already included in the recipe
-                raw_materials = [mat for mat in get_all_raw_materials(item_name, pack).difference(unique_items) if (not mat in materials) and mat != item_name]
-
-                if gstate.recursion_error:
-                    self.content.controls.append(ft.Row([ft.Text(f"Recipe loop found with item {gstate.recursion_item}!", size=16, color=ft.colors.BLACK, expand=True)]))
-
-                    gstate.recursion_error = False
-                    gstate.recursion_item = None
+                try:
+                    # Remove items already included in the recipe
+                    raw_materials = [mat for mat in get_all_raw_materials(item_name, pack).difference(unique_items) if (not mat in materials) and mat != item_name]
+                except RecipeLoopError as error:
+                    self.content.controls.append(ft.Row([ft.Text(f"Recipe loop found with item {error.name}!", size=16, color=ft.colors.BLACK, expand=True)]))
 
             # Now display the missing items
             if len(missing_items) > 0 or len(raw_materials) > 0:
+                # In this case we just combine the two lists together
                 self.content.controls.append(ft.Row([ft.Text(f"Missing Recipes for {', '.join(sorted(missing_items + raw_materials))}", size=16, color=ft.colors.BLACK, expand=True)]))
 
 
-# Creates a bordered container text
-def border_container_text(text):
+def border_container_text(text: str) -> ft.Container:
+    """Creates a bordered Container containing some text."""
     return ft.Container(ft.Row([
         ft.Text(text, color=ft.colors.BLACK)
     ]), border=ft.border.only(top=ft.border.BorderSide(1, "black")))
 
-# This class represents the recipe output area
+
 class RecipeOutput(ft.Container):
-    def __init__(self, config):
+    """RecipeOutput manages the area for displaying recipe outputs."""
+    def __init__(self, config: MainConfigFile):
         super().__init__()
 
         self.expand = 4
         self.padding = 10
 
         self.config = config
+        """Config contains the app's config file."""
 
-        self.content = ft.Column([
+        self.content: ft.Column = ft.Column([
         ], expand=True, scroll=ft.ScrollMode.AUTO)
 
-    # Displays a recipe
-    def display_recipe(self, item_name, pack, is_checked=False):
+    def display_recipe(self, item_name: str, pack: PackConfigFile, is_checked: bool=False):
+        """Displays a recipe in the RecipeOutput area. is_checked is whether the recipe was in checking mode or not."""
+        # Adds the RecipeOutputItem
         self.content.controls.insert(0, RecipeOutputItem(item_name, pack, self.config, is_checked))
 
         self.update()
+        
+    def display_text(self, text: str):
+        """Displays text in the RecipeOutput area."""
+        self.content.controls.insert(0, border_container_text(text))
+        
+        self.update()
 
-    # Checks a recipe
-    def check_recipe(self, item_name, pack):
+    def check_recipe(self, item_name: str, pack: PackConfigFile):
+        """Checks if a recipe exists, displaying some text as a result."""
         if pack.has_recipe(item_name):
             self.display_recipe(item_name, pack, True)
 
-            self.content.controls.insert(0, border_container_text(f"A recipe for {item_name} exists!"))
+            self.display_text(f"A recipe for {item_name} exists!")
         else:
-            self.content.controls.insert(0, border_container_text(f"No recipe for {item_name} exists!"))
+            self.display_text(f"No recipe for {item_name} exists!")
 
-        self.update()
-
-    # Displays text for deleting a recipe
-    def delete_recipe(self, item_name, exists):
+    def delete_recipe(self, item_name: str, exists: bool):
+        """Displays text for when a recipe is deleted."""
         if exists:
-            self.content.controls.insert(0, border_container_text(f"Deleted the recipe for {item_name}!"))
+            self.display_text(f"Deleted the recipe for {item_name}!")
         else:
-            self.content.controls.insert(0, border_container_text(f"No recipe for {item_name} exists!"))
-
-        self.update()
+            self.display_text(f"No recipe for {item_name} exists!")
 
 # This class represents the part of the program which adds recipes
 class RecipeAdder(ft.Container):
-    def __init__(self, expand, parent, config):
+    """RecipeAdder adds recipes to the pack."""
+    def __init__(self, expand: int, parent: "Calchelper", config: MainConfigFile):
         super().__init__()
 
         self.expand = expand
+        
         self.parent = parent
+        """Parent contains a reference to the Calchelper object."""
+        
         self.margin = 0
+        
         self.config = config
+        """Config contains the app's config file."""
 
         self.recipe_text_field = RecipeInputTextField(parent)
+        """Reference to the recipe text field which manages the text part of adding recipes."""
+        
         self.recipe_output = RecipeOutput(self.config)
+        """Reference to the RecipeOutput display."""
 
         self.content = ft.Column([
             self.recipe_output,
@@ -469,25 +569,32 @@ class RecipeAdder(ft.Container):
             ], expand=True, spacing=0), 1)
         ], expand=True, spacing=0)
 
-    def create_recipe(self, output, inputs):
+    def create_recipe(self, output: ItemStack, inputs: List[ItemStack]):
+        """Creates a recipe using the output and input ItemStacks."""
         self.parent.create_recipe(output, inputs)
 
-    def display_recipe(self, item_name, pack):
+    def display_recipe(self, item_name: str, pack: PackConfigFile):
+        """Displays a recipe in the RecipeOutput area."""
         self.recipe_output.display_recipe(item_name, pack)
 
-    def check_recipe(self, item_name, pack):
+    def check_recipe(self, item_name: str, pack: PackConfigFile):
+        """Checks if a recipe exists and displays the corresponding text."""
         self.recipe_output.check_recipe(item_name, pack)
 
-    def delete_recipe(self, item_name, exists):
+    def delete_recipe(self, item_name: str, exists: bool):
+        """Displays the corresponding text for deleting a recipe."""
         self.recipe_output.delete_recipe(item_name, exists)
 
-# This class represents the part of the program which checks or deletes recipes
+
 class RecipeModifier(ft.Container):
-    def __init__(self, expand, parent):
+    """RecipeModifier checks or deletes recipes."""
+    def __init__(self, expand: int, parent: "Calchelper"):
         super().__init__()
 
         self.expand = expand
+        
         self.parent = parent
+        """Reference to the Calchelper app."""
 
         self.margin = 0
 
@@ -496,6 +603,7 @@ class RecipeModifier(ft.Container):
         self.text_field = ft.TextField(label="Enter item", width=200, color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
                     color=ft.colors.BLACK
                 ), on_submit=self.check_recipe)
+        """Text field for entering an item for checking or deleting."""
 
         self.content = ft.Column([
             wrap_expand(center_object(ft.Text("Check or Delete Recipes", color=ft.colors.BLACK, size=18)), 1),
@@ -514,152 +622,219 @@ class RecipeModifier(ft.Container):
             
         ], expand=True, spacing=0)
 
-    # Checks the contents of a recipe
     def check_recipe(self, e):
-        self.parent.check_recipe(self.text_field.value.strip())
+        """Check the contents of a recipe, displaying them in the RecipeOutput area."""
+        value = self.text_field.value
+        
+        if value is not None:
+            self.parent.check_recipe(value.strip())
 
-    # Deletes a recipe
     def delete_recipe(self, e):
-        self.parent.delete_recipe(self.text_field.value.strip())
+        """Deletes a recipe from the pack."""
+        value = self.text_field.value
+        
+        if value is None:
+            return
+        
+        self.parent.delete_recipe(value.strip())
         self.text_field.value = ""
+        
+        
+class FluidMaterialsState(Enum):
+    """FluidMaterialsState represents a possible state for the FluidMaterialsManager to be in."""
+    MATERIALS = 0
+    FLUIDS = 1
+    
+    def to_string(self) -> str:
+        """Returns the string representation of the state, separate from __repr__."""
+        return "Raw Materials" if self == FluidMaterialsState.MATERIALS else "Fluids"
 
-# This class represents the toggle button between raw materials and fluids
+
 class MaterialToggleButton(ft.Container):
-    def __init__(self, parent):
+    """MaterialToggleButton is the toggle button to toggle between raw materials and fluids."""
+    def __init__(self, parent: "FluidMaterialsManager"):
         super().__init__()
         self.expand = 1
+        
         self.parent = parent
+        """Reference to the parent FluidMaterialsManager."""
+        
+        self.state = FluidMaterialsState.MATERIALS
+        """Current state of the FluidMaterialsManager."""
 
-        self.content = ft.FilledButton(text="Raw Materials", on_click=self.handle_click, tooltip="Press to toggle between Raw Materials and Fluids", style=ft.ButtonStyle(color=ft.colors.BLACK, bgcolor=ft.colors.BLUE, shape=ft.RoundedRectangleBorder(radius=0)))
+        self.content: ft.FilledButton = ft.FilledButton(text="Raw Materials", on_click=self.handle_click, tooltip="Press to toggle between Raw Materials and Fluids", style=ft.ButtonStyle(color=ft.colors.BLACK, bgcolor=ft.colors.BLUE, shape=ft.RoundedRectangleBorder(radius=0)))
 
     # Handles a click
     def handle_click(self, e):
-        if self.content.text == "Raw Materials":
-            self.content.text = "Fluids"
+        # Updates the state
+        if self.state == FluidMaterialsState.MATERIALS:
+            self.state = FluidMaterialsState.FLUIDS
         else:
-            self.content.text = "Raw Materials"
-
-        self.parent.toggle(self.content.text)
-
+            self.state = FluidMaterialsState.MATERIALS
+            
+        self.content.text = self.state.to_string()
+        
+        self.parent.toggle(self.state)
+        
         self.update()
 
 # This class adds or removes raw materials or fluids
 class FluidMaterialsModifier(ft.Container):
-    # give it a type parameter which is materials or ae2_fluids
-    def __init__(self, typeparam, pack, parent):
+    """FluidMaterialsModifier adds or removes raw materials and fluids."""
+    def __init__(self, state: FluidMaterialsState, pack: PackConfigFile, parent: "FluidMaterialsManager"):
         super().__init__()
 
-        self.type = typeparam
+        self.state = state
+        """What type of FluidMaterialsModifier is this, raw materials or fluids?"""
+        
         self.pack = pack
+        """Pack file used by calchelper."""
+        
         self.margin = 5
         self.expand = True
+        
         self.parent = parent
+        """Reference to the parent FluidMaterialsManager."""
 
-        # track the raw materials or fluids
         self.material_list = ft.Column([], spacing=10, scroll=ft.ScrollMode.AUTO)
+        """List of elements that contains all the materials."""
 
-        # Text field for adding/removing
-        self.text_field = ft.TextField(label=f"Enter {'material' if self.type == 'materials' else 'fluid'}", color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
+        self.text_field = ft.TextField(label=f"Enter {'material' if self.state == FluidMaterialsState.MATERIALS else 'fluid'}", color=ft.colors.BLACK, focused_color=ft.colors.BLACK, cursor_color=ft.colors.BLACK, border_color=ft.colors.BLACK, label_style=ft.TextStyle(
                     color=ft.colors.BLACK
-                ), on_submit=self.add_material, width=150)
+                ), on_submit=self.on_add_clicked, width=150)
+        """Text field for adding/removing materials of the given type."""
 
         self.content = ft.Column([
             wrap_expand(self.material_list, 6),
 
             wrap_expand(center_object(self.text_field), 1),
 
-            ft.Container(ft.Row([
-                wrap_expand(ft.FloatingActionButton(icon=ft.icons.ADD, bgcolor=ft.colors.GREEN, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.add_material), 1),
+            ft.Container(ft.Row(controls=[
+                wrap_expand(ft.FloatingActionButton(icon=ft.icons.ADD, bgcolor=ft.colors.GREEN, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.on_add_clicked), 1),
                 wrap_expand(None, 1),
-                wrap_expand(ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.remove_material), 1),
+                wrap_expand(ft.FloatingActionButton(icon=ft.icons.DELETE, bgcolor=ft.colors.RED, shape=ft.RoundedRectangleBorder(radius=0), on_click=self.on_remove_clicked), 1),
             ], expand=True), expand=1)
 
             # wrap_expand(None, 1)
         ], spacing=0, expand=True)
 
-        self.load_materials(True)
+        self.load_materials()
 
-    # Loads the raw materials or fluids
-    def load_materials(self, on_load=False):
-        items = self.pack.get_raw_materials() if self.type == "materials" else self.pack.get_ae2_fluids()
+    def load_materials(self):
+        """Loads the given type of material from the pack file."""
+        items = self.pack.get_raw_materials() if self.state == FluidMaterialsState.MATERIALS else self.pack.get_ae2_fluids()
 
+        # Now reset the controls in the component
         self.material_list.controls = []
 
         for item in sorted(items):
+            # Print the list of controls
             self.material_list.controls.append(ft.Row([
                 ft.Text(item, color=ft.colors.BLACK)
             ]))
 
-    # Adds a material of the given type
-    def add_material(self, e, focus=True):
-        name = self.text_field.value.lower().strip()
-
-        added_item = False
+    def on_add_clicked(self, e):
+        """Function is called when the add button is clicked."""
+        value = self.text_field.value
+        
+        if value is None:
+            return
+        
+        name = value.lower().strip()
 
         if name == "":
             return
+        
+        self.add_material(name)
 
-        if self.type == "materials":
-            if name not in self.pack.get_raw_materials():
-                self.pack.add_raw_material(name)
-                added_item = True
-        elif name not in self.pack.get_ae2_fluids():
-            self.pack.add_ae2_fluid(name)
-            added_item = True
-
+        # Resets the text field
         self.text_field.value = ""
         
-        if focus:
-            self.text_field.focus()
+        self.text_field.focus()
+        
+    def get_text_modifier(self) -> str:
+        """Returns what text to be used with the material when updating the RecipeOutput."""
+        return "material" if self.state == FluidMaterialsState.MATERIALS else "fluid"
 
+    def add_material(self, material: str):
+        """Adds a material to the list of materials."""
+        if self.state == FluidMaterialsState.MATERIALS:
+            if material not in self.pack.get_raw_materials():
+                self.pack.add_raw_material(material)
+        elif material not in self.pack.get_ae2_fluids():
+            self.pack.add_ae2_fluid(material)
+            
+        # Add to the RecipeOutput with the given material
+        self.parent.parent.recipe_adder.recipe_output.display_text(f"Added new {self.get_text_modifier()} {material}")
+            
         # Update trie
-        self.parent.parent.recipe_adder.recipe_text_field.add_words_from_item(name)
+        self.parent.parent.recipe_adder.recipe_text_field.add_words_from_item(material)
         
         self.load_materials()
         self.update()
 
-    # Removes a material of the given type
-    def remove_material(self, e):
-        name = self.text_field.value.lower().strip()
+    def on_remove_clicked(self, e):
+        """Function is called when the remove button is clicked."""
+        value = self.text_field.value
+        
+        if value is None:
+            return
+        
+        name = value.lower().strip()
 
         if name == "":
             return
 
-        if self.type == "materials":
+        if self.state == FluidMaterialsState.MATERIALS:
             if name in self.pack.get_raw_materials():
                 mats = self.pack.get_recipe("materials")
 
                 if mats is not None:
-                    mats.inputs = [i for i in mats.inputs if i.get_item_name() != name]
+                    mats.inputs = [item for item in mats.inputs if item.name != name]
         elif name in self.pack.get_ae2_fluids():
             mats = self.pack.get_recipe("ae2_fluids")
 
             if mats is not None:
-                mats.inputs = [i for i in mats.inputs if i.get_item_name() != name]
+                mats.inputs = [item for item in mats.inputs if item.name != name]
+            
+        # Add to the RecipeOutput with the given material
+        self.parent.parent.recipe_adder.recipe_output.display_text(f"Removed {self.get_text_modifier()} {value}")
 
+        # Reset the text field
         self.text_field.value = ""
         self.text_field.focus()
         
         self.load_materials()
         self.update()
 
-# This class represents the part of the program which manages fluids and raw materials
+
 class FluidMaterialsManager(ft.Container):
-    def __init__(self, expand, pack, parent):
+    """FluidMaterialsManager manages fluids and raw materials."""
+    def __init__(self, expand: int, pack: PackConfigFile, parent: "Calchelper"):
         super().__init__()
 
         self.expand = expand
         self.margin = 0
+        
         self.parent = parent
+        """Reference to the Calchelper app."""
 
         self.bgcolor = ft.colors.BLUE_700
 
-        self.materials_modifier = FluidMaterialsModifier("materials", pack, self)
-        self.fluid_modifier = FluidMaterialsModifier("ae2_fluids", pack, self)
+        self.materials_modifier = FluidMaterialsModifier(FluidMaterialsState.MATERIALS, pack, self)
+        """The object for modifying the list of raw materials."""
+        
+        self.fluid_modifier = FluidMaterialsModifier(FluidMaterialsState.FLUIDS, pack, self)
+        """The object for modifying the list of fluids."""
 
         self.center_row = ft.Row([self.materials_modifier], expand=9)
+        """The main part of the FluidMaterialsManager that actually manages things."""
         
         self.material_toggle = MaterialToggleButton(self)
+        """MaterialToggleButton toggles between raw materials and fluids."""
+        
+        self.state = FluidMaterialsState.MATERIALS
+        """Current state the FluidMaterialsManager is in."""
 
         self.content = ft.Column([
             ft.Row([
@@ -668,69 +843,59 @@ class FluidMaterialsManager(ft.Container):
             self.center_row
         ], spacing=0, expand=True)
 
-    # Toggles which material modifier is loaded
-    def toggle(self, name):
-        if name == "Raw Materials":
+    def toggle(self, state: FluidMaterialsState):
+        """Toggles between raw materials and fluids."""
+        if state == FluidMaterialsState.MATERIALS:
+            # Update the controls
             self.center_row.controls[0] = self.materials_modifier
             self.materials_modifier.load_materials()
         else:
             self.center_row.controls[0] = self.fluid_modifier
             self.fluid_modifier.load_materials()
+            
+        self.state = state
 
         self.update()
+        
+    def set_state(self, state: FluidMaterialsState):
+        """Special state setter for use when called externally."""
+        # Update the material toggle button
+        self.material_toggle.state = state
+        self.material_toggle.content.text = state.to_string()
+        self.material_toggle.update()
+        
+        self.toggle(state)
 
-# This class represents the calchelper utility
+
 class Calchelper(ft.UserControl):
-    def __init__(self, page):
+    """Calchelper class represents the calchelper GUI app."""
+    def __init__(self, page: ft.Page):
         super().__init__()
 
-        self.page = page
+        self.page: ft.Page = page
+        """Page used for the app."""
 
         self.file_name = gstate.file_name
+        """Pack file name."""
+        
         self.expand = True
 
-        # Loads the main app config file
         self.app_config = load_main_config()
+        """Configs used by the app."""
 
-        # Gets the yaml file
         self.pack = load_pack_config(self.file_name)
+        """Pack file used by calchelper."""
 
-    # Displays a recipe
-    def display_recipe(self, item_name, pack):
-        self.recipe_adder.display_recipe(item_name, pack)
-
-    # Checks a recipe
-    def check_recipe(self, item_name):
-        self.recipe_adder.check_recipe(item_name, self.pack)
-
-    # Deletes a recipe
-    def delete_recipe(self, item_name):
-        self.recipe_adder.delete_recipe(item_name, self.pack.has_recipe(item_name))
-
-        if self.pack.has_recipe(item_name):
-            self.pack.delete_recipe(item_name)
-
-    # Creates a recipe
-    def create_recipe(self, output, inputs):
-        item_name = output.get_item_name()
-
-        # Sets the recipe for the pack
-        self.pack.set_recipe(item_name, CraftingRecipe.create_with_itemstack(output, inputs))
-
-        # Now display the recipe
-        self.display_recipe(item_name, self.pack)
-
-    def build(self):
-        # part of the app that manages adding recipes
+    def build(self) -> ft.Container:
         self.recipe_adder = RecipeAdder(4, self, self.app_config)
+        """RecipeAdder manages adding recipes to the pack."""
 
-        # part of the app that checks/deletes recipes
         self.recipe_modifier = RecipeModifier(1, self)
+        """RecipeModifier checks/deletes recipes."""
 
-        # part of the app that manages fluids and raw materials
         self.fluid_materials_manager = FluidMaterialsManager(1, self.pack, self)
+        """FluidMaterialsManager manages fluids and raw materials."""
 
-        # main part of the app
         self.main_app = ft.Container(
             content=ft.Row([
                 ft.Container(
@@ -748,8 +913,8 @@ class Calchelper(ft.UserControl):
             margin=0,
             padding=0
         )
+        """This is the main body of the app."""
 
-        # save/quit buttons
         self.save_quit_area = ft.Container(
             content=ft.Row([
                 BottomBarButton("Save", self.save_clicked),
@@ -759,6 +924,7 @@ class Calchelper(ft.UserControl):
             margin=0,
             padding=0
         )
+        """This is the area for the save/quit buttons."""
 
         self.view = ft.Container(
             content=ft.Column(controls=[
@@ -770,31 +936,45 @@ class Calchelper(ft.UserControl):
             padding=0,
             expand=True
         )
+        """This is the overall view for the app."""
         
-        return self.view
+        return self.view 
 
-    # on save button clicked
+    def display_recipe(self, item_name: str, pack: PackConfigFile):
+        """Displays a recipe in the RecipeOutput area."""
+        self.recipe_adder.display_recipe(item_name, pack)
+
+    def check_recipe(self, item_name: str):
+        """Checks if a recipe exists, displaying the result in the RecipeAdder area."""
+        self.recipe_adder.check_recipe(item_name, self.pack)
+
+    def delete_recipe(self, item_name: str):
+        """Deletes a recipe from the pack and displays the results of that."""
+        self.recipe_adder.delete_recipe(item_name, self.pack.has_recipe(item_name))
+
+        if self.pack.has_recipe(item_name):
+            self.pack.delete_recipe(item_name)
+
+    def create_recipe(self, output: ItemStack, inputs: List[ItemStack]):
+        """Creates a recipe using the output and input ItemStacks."""
+        # Sets the recipe for the pack
+        self.pack.set_recipe(output.name, CraftingRecipe.create_with_itemstack(output, inputs))
+
+        # Now display the recipe
+        self.display_recipe(output.name, self.pack)
+
     def save_clicked(self, e):
+        """Function that runs when the save button is clicked."""
         ch.save_data(self.file_name, self.pack)
         print(f"Saved to {self.file_name}")
 
-    # Runs the on-tab-pressed event for autocomplete
     def on_tab_press(self):
+        """Function that runs when the tab key is pressed (for autocomplete)."""
         self.recipe_adder.recipe_text_field.on_tab_press()
 
-    # # on save and quit button clicked
-    # def save_quit_clicked(self, e):
-    #     self.save_clicked(e)
-    #     self.quit_clicked(e)
-    #     self.page.window_close()
 
-    # # on quit button clicked
-    # def quit_clicked(self, e):
-    #     print("Quitting")
-    #     self.page.window_close()
-
-# This screen handles deciding what pack to work with
-def launch_screen(page):
+def launch_screen(page: ft.Page):
+    """Launch screen handles deciding what pack to edit."""
     page.window_width = 500
     page.window_height = 300
     page.title = "Enter pack name:"
@@ -804,8 +984,9 @@ def launch_screen(page):
 
     page.add(launch)
 
-# This screen handles recipe creation
-def recipe_screen(page):
+
+def recipe_screen(page: ft.Page):
+    """Recipe screen handles recipe creation and editing."""
     page.window_center()
     calchelper = Calchelper(page)
 
@@ -822,6 +1003,8 @@ def recipe_screen(page):
 
     page.add(calchelper)
 
+
 ft.app(target=launch_screen)
+
 
 ft.app(target=recipe_screen)
