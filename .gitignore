@@ -11,6 +11,7 @@ output.gv.pdf
 output.png
 output.ps
 output.svg
+output.txt
 test.gv
 finished.txt
 results.html
