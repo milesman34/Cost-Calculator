@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Callable
-import flet as ft
+import flet as ft # type: ignore
 import calchelper as ch
 import re
 
@@ -73,12 +73,13 @@ gstate = GlobalState()
 class LaunchScreen(ft.UserControl):
     """This class represents the LaunchScreen, for picking a recipe pack to edit."""
     def __init__(self, page: ft.Page):
-        super().__init__()
+        super().__init__() # type: ignore
 
-        self.page: ft.Page = page
+
+        self.page: ft.Page = page # type: ignore
         """The current page being used."""
 
-    def build(self):
+    def build(self): # type: ignore
         self.pack_input = ft.TextField(autofocus=True, on_submit=self.confirm, expand=1)
 
         return ft.Column(
@@ -96,7 +97,7 @@ class LaunchScreen(ft.UserControl):
             spacing=25
         )
 
-    def confirm(self, e):
+    def confirm(self, _: Any):
         """Confirms the chosen pack and saves it to the file, then moving to the next part of the application."""
         value = self.pack_input.value
         
@@ -167,9 +168,9 @@ class LaunchScreen(ft.UserControl):
 
 class BottomBarButton(ft.Container):
     """BottomBarButton represents a button for the bottom save/quit bar."""
-    def __init__(self, text: str, onclick: Callable):
+    def __init__(self, text: str, onclick: Callable[[], None]):
         """Text is displayed on the button, onclick is called when the button is pressed."""
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.content = center_object(
             ft.Text(text, text_align=ft.TextAlign.CENTER, color=ft.colors.BLACK)
@@ -186,7 +187,7 @@ class BottomBarButton(ft.Container):
         # current onhover value
         self.on_hover = self.on_hover_event
 
-    def on_hover_event(self, e):
+    def on_hover_event(self, e: ft.HoverEvent):
         """Reacts to hover events."""
         # we need to change the background color then
         if e.data == "true":
@@ -206,7 +207,7 @@ class InputTextState(Enum):
 class RecipeInputTextField(ft.TextField):
     """RecipeInputTextField represents the text field for inputting recipes."""
     def __init__(self, parent: "Calchelper"):
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.expand = 2
 
@@ -225,7 +226,7 @@ class RecipeInputTextField(ft.TextField):
         self.border_color = ft.colors.BLACK
 
         self.suffix_style = ft.TextStyle(color=ft.colors.BLACK)
-        self.suffix_text = ""
+        self.suffix_text: str = ""
         
         self.label_style = ft.TextStyle(
             color=ft.colors.BLACK
@@ -261,7 +262,7 @@ class RecipeInputTextField(ft.TextField):
             for item in recipe.inputs:
                 for word in item.name.split(" "):
                     self.trie.add_word(word)
-                    
+
         # Set up autocomplete for ae2_fluid, raw_material, check, and delete to prioritize them
         self.trie.add_word("ae2_fluid", 1000)
         self.trie.add_word("raw_material", 1000)
@@ -281,7 +282,7 @@ class RecipeInputTextField(ft.TextField):
 
         return index + 1
 
-    def on_change_fn(self, e):
+    def on_change_fn(self, _: Any):
         """Function that runs when the text input is changed."""
         value = self.value
         
@@ -306,7 +307,7 @@ class RecipeInputTextField(ft.TextField):
         # Update the component
         self.update()
 
-    def on_submit_fn(self, e):
+    def on_submit_fn(self, _: Any):
         """Function that runs when the text field is submitted."""
         value = self.value
         
@@ -377,7 +378,7 @@ class RecipeInputTextField(ft.TextField):
 
         # Reset the textbox values after submitting
         self.value = ""
-        self.suffix_text = ""
+        self.suffix_text = "" # type: ignore
         self.focus()
 
         self.update()
@@ -398,12 +399,12 @@ class RecipeInputTextField(ft.TextField):
         if self.focused:
             # We still need the nullable checks here
             value = self.value
-            suffix_text = self.suffix_text
+            suffix_text: str = self.suffix_text
             
             if value is None:
                 return
             
-            if suffix_text is None or suffix_text == "": # no valid prediction being made by the Trie
+            if suffix_text == "": # no valid prediction being made by the Trie
                 if len(value.strip()) > 0:
                     self.focus()
 
@@ -417,11 +418,11 @@ class RecipeInputTextField(ft.TextField):
             self.focus()
             self.update()
 
-    def turn_on_focus(self, e):
+    def turn_on_focus(self, _: Any):
         """Function that runs when the text field is focused (so that it doesn't try to auto-complete when working with other areas)."""
         self.focused = True
 
-    def turn_off_focus(self, e):
+    def turn_off_focus(self, _: Any):
         """Function that runs when the text field is no longer focused."""
         self.focused = False
 
@@ -431,7 +432,7 @@ class RecipeOutputItem(ft.Container):
     # is_checked says if the output item was created when checking recipes
     def __init__(self, item_name: str, pack: PackConfigFile, config: MainConfigFile, is_checked: bool=False):
         """is_checked parameter is whether this object was created from checking a recipe or not."""
-        super().__init__()
+        super().__init__() # type: ignore
         self.margin = 0
         
         # Gets the recipe
@@ -495,7 +496,7 @@ def border_container_text(text: str) -> ft.Container:
 class RecipeOutput(ft.Container):
     """RecipeOutput manages the area for displaying recipe outputs."""
     def __init__(self, config: MainConfigFile):
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.expand = 4
         self.padding = 10
@@ -503,8 +504,7 @@ class RecipeOutput(ft.Container):
         self.config = config
         """Config contains the app's config file."""
 
-        self.content: ft.Column = ft.Column([
-        ], expand=True, scroll=ft.ScrollMode.AUTO)
+        self.content: ft.Column = ft.Column([], expand=True, scroll=ft.ScrollMode.AUTO) # type: ignore
 
     def display_recipe(self, item_name: str, pack: PackConfigFile, is_checked: bool=False):
         """Displays a recipe in the RecipeOutput area. is_checked is whether the recipe was in checking mode or not."""
@@ -539,7 +539,7 @@ class RecipeOutput(ft.Container):
 class RecipeAdder(ft.Container):
     """RecipeAdder adds recipes to the pack."""
     def __init__(self, expand: int, parent: "Calchelper", config: MainConfigFile):
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.expand = expand
         
@@ -589,7 +589,7 @@ class RecipeAdder(ft.Container):
 class RecipeModifier(ft.Container):
     """RecipeModifier checks or deletes recipes."""
     def __init__(self, expand: int, parent: "Calchelper"):
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.expand = expand
         
@@ -622,14 +622,14 @@ class RecipeModifier(ft.Container):
             
         ], expand=True, spacing=0)
 
-    def check_recipe(self, e):
+    def check_recipe(self, _: Any):
         """Check the contents of a recipe, displaying them in the RecipeOutput area."""
         value = self.text_field.value
         
         if value is not None:
             self.parent.check_recipe(value.strip())
 
-    def delete_recipe(self, e):
+    def delete_recipe(self, _: Any):
         """Deletes a recipe from the pack."""
         value = self.text_field.value
         
@@ -653,7 +653,7 @@ class FluidMaterialsState(Enum):
 class MaterialToggleButton(ft.Container):
     """MaterialToggleButton is the toggle button to toggle between raw materials and fluids."""
     def __init__(self, parent: "FluidMaterialsManager"):
-        super().__init__()
+        super().__init__() # type: ignore
         self.expand = 1
         
         self.parent = parent
@@ -662,10 +662,10 @@ class MaterialToggleButton(ft.Container):
         self.state = FluidMaterialsState.MATERIALS
         """Current state of the FluidMaterialsManager."""
 
-        self.content: ft.FilledButton = ft.FilledButton(text="Raw Materials", on_click=self.handle_click, tooltip="Press to toggle between Raw Materials and Fluids", style=ft.ButtonStyle(color=ft.colors.BLACK, bgcolor=ft.colors.BLUE, shape=ft.RoundedRectangleBorder(radius=0)))
+        self.content: ft.FilledButton = ft.FilledButton(text="Raw Materials", on_click=self.handle_click, tooltip="Press to toggle between Raw Materials and Fluids", style=ft.ButtonStyle(color=ft.colors.BLACK, bgcolor=ft.colors.BLUE, shape=ft.RoundedRectangleBorder(radius=0))) # type: ignore
 
     # Handles a click
-    def handle_click(self, e):
+    def handle_click(self, _: Any):
         # Updates the state
         if self.state == FluidMaterialsState.MATERIALS:
             self.state = FluidMaterialsState.FLUIDS
@@ -682,7 +682,7 @@ class MaterialToggleButton(ft.Container):
 class FluidMaterialsModifier(ft.Container):
     """FluidMaterialsModifier adds or removes raw materials and fluids."""
     def __init__(self, state: FluidMaterialsState, pack: PackConfigFile, parent: "FluidMaterialsManager"):
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.state = state
         """What type of FluidMaterialsModifier is this, raw materials or fluids?"""
@@ -733,7 +733,7 @@ class FluidMaterialsModifier(ft.Container):
                 ft.Text(item, color=ft.colors.BLACK)
             ]))
 
-    def on_add_clicked(self, e):
+    def on_add_clicked(self, _: Any):
         """Function is called when the add button is clicked."""
         value = self.text_field.value
         
@@ -773,7 +773,7 @@ class FluidMaterialsModifier(ft.Container):
         self.load_materials()
         self.update()
 
-    def on_remove_clicked(self, e):
+    def on_remove_clicked(self, _: Any):
         """Function is called when the remove button is clicked."""
         value = self.text_field.value
         
@@ -811,7 +811,7 @@ class FluidMaterialsModifier(ft.Container):
 class FluidMaterialsManager(ft.Container):
     """FluidMaterialsManager manages fluids and raw materials."""
     def __init__(self, expand: int, pack: PackConfigFile, parent: "Calchelper"):
-        super().__init__()
+        super().__init__() # type: ignore
 
         self.expand = expand
         self.margin = 0
@@ -870,9 +870,9 @@ class FluidMaterialsManager(ft.Container):
 class Calchelper(ft.UserControl):
     """Calchelper class represents the calchelper GUI app."""
     def __init__(self, page: ft.Page):
-        super().__init__()
+        super().__init__() # type: ignore
 
-        self.page: ft.Page = page
+        self.page: ft.Page = page # type: ignore
         """Page used for the app."""
 
         self.file_name = gstate.file_name
@@ -886,7 +886,7 @@ class Calchelper(ft.UserControl):
         self.pack = load_pack_config(self.file_name)
         """Pack file used by calchelper."""
 
-    def build(self) -> ft.Container:
+    def build(self) -> ft.Container: # type: ignore
         self.recipe_adder = RecipeAdder(4, self, self.app_config)
         """RecipeAdder manages adding recipes to the pack."""
 
@@ -917,7 +917,7 @@ class Calchelper(ft.UserControl):
 
         self.save_quit_area = ft.Container(
             content=ft.Row([
-                BottomBarButton("Save", self.save_clicked),
+                BottomBarButton("Save", self.save_clicked), # type: ignore
             ], expand=True, spacing=0),
             expand=1,
             bgcolor=ft.colors.RED,
@@ -963,7 +963,7 @@ class Calchelper(ft.UserControl):
         # Now display the recipe
         self.display_recipe(output.name, self.pack)
 
-    def save_clicked(self, e):
+    def save_clicked(self, _: Any):
         """Function that runs when the save button is clicked."""
         ch.save_data(self.file_name, self.pack)
         print(f"Saved to {self.file_name}")
@@ -982,7 +982,7 @@ def launch_screen(page: ft.Page):
 
     launch = LaunchScreen(page)
 
-    page.add(launch)
+    page.add(launch) # type: ignore
 
 
 def recipe_screen(page: ft.Page):
@@ -990,7 +990,7 @@ def recipe_screen(page: ft.Page):
     page.window_center()
     calchelper = Calchelper(page)
 
-    def on_keyboard(e):
+    def on_keyboard(e: ft.KeyboardEvent):
         if e.key == "Tab":
             calchelper.on_tab_press()
 
@@ -1001,10 +1001,10 @@ def recipe_screen(page: ft.Page):
     page.expand = True
     page.theme_mode = ft.ThemeMode.DARK
 
-    page.add(calchelper)
+    page.add(calchelper) # type: ignore
 
 
-ft.app(target=launch_screen)
+ft.app(target=launch_screen) # type: ignore
 
 
-ft.app(target=recipe_screen)
+ft.app(target=recipe_screen) # type: ignore

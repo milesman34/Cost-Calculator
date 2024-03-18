@@ -99,7 +99,7 @@ def load_main_config() -> MainConfigFile:
 class PackConfigFile:
     """Class representing a recipe pack configuration file."""
     # Pass the yaml file from load_config_file
-    def __init__(self, yaml_file: YAML_Data):
+    def __init__(self, yaml_file: Optional[YAML_Data]):
         """When creating a PackConfigFile, pass in the results of load_config_file called with the path to the pack's config file."""
         self.recipes: Dict[str, CraftingRecipe] = {}
         """This dict maps the names of items to a CraftingRecipe for that item."""
@@ -208,7 +208,7 @@ class CraftingRecipe:
         """List of items (as an ItemStack) used for the recipe."""
 
         # Create a dictionary to count up how much each item appears
-        inputs_dict = collections.defaultdict(int)
+        inputs_dict: Dict[str, int] = collections.defaultdict(int)
 
         # it does some processing for the inputs to add together cases where it calls for the same item twice
         for stack in inputs:
@@ -284,6 +284,9 @@ class TrieNode:
 
 
 class Trie:
+    dictionary: set[str] = set()
+    """Dictionary of valid words."""
+    
     """The Trie class lets you build an auto-complete system by storing how characters map to how many times they appear."""
     def __init__(self):
         # it will have a dict of characters which map to the amount of times that character appeared in that position, as well as either another Trie or None
@@ -293,12 +296,9 @@ class Trie:
         self.total_words = 0
         """How many total words were added to this Trie? Can apply to duplicates."""
 
-        self.words: Set[str] = set()
-        """Set of completed words that can be used for predictions."""
-
     def add_word(self, word: str, multiplier: int=1):
         """Adds a word to the Trie. The optional multiplier parameter determines how many times the word should be added."""
-        self.words.add(word)
+        Trie.dictionary.add(word)
 
         # this is recursive and uses multiple tries, so we start with the base case
         ch = word[0]
@@ -331,7 +331,7 @@ class Trie:
                 self.characters[ch] = TrieNode(multiplier, new_trie)
 
     # This now attempts to predict a word based on the given text (use the amount of words, track the number of times this word has appeared too, words represents the set of words, current represents the current string)
-    def predict_word(self, word: str, num_words: int=-1, words: Optional[Set[str]]=None, current: str="", starting_word: Optional[str]=None):
+    def predict_word(self, word: str, num_words: int=-1, current: str="", starting_word: Optional[str]=None) -> str:
         """Predicts a word from the Trie based on the characters provided so far.
         
         word refers to the characters provided so far.
@@ -346,9 +346,6 @@ class Trie:
         # Get the number of total words. It can either be passed as a parameter or can just be the total_words value.
         num_words = num_words if num_words >= 0 else self.total_words
         
-        # Gets the set of words. It can either be passed as a parameter or can just be the words set in this Trie.
-        words = self.words if words is None else words
-        
         # Gets the starting word to work with. By default, it will be the word which is passed here.
         start = word if starting_word is None else starting_word
 
@@ -360,7 +357,7 @@ class Trie:
 
             # The current word passed in to this method is a word and the TrieNode corresponding to the character which appears the most is responsible for at least half of all words in this Trie.
             # For example, if that TrieNode had a value of 5, compared to 8 total words in this Trie, then this condition would be true.
-            if current in words and max_char_amt <= num_words - max_char_amt:
+            if current in Trie.dictionary and max_char_amt <= num_words - max_char_amt:
                 # We found the starting word, so continue predicting from there.
                 if current == start:
                     next_node = max_char_node.next
@@ -369,7 +366,7 @@ class Trie:
                     if next_node is None: # next_node shouldn't be None, but just return an empty string in case
                         return ""
                     else:
-                        return max_char + next_node.predict_word(word, max_char_amt, words=words, current=current + max_char, starting_word=start)
+                        return max_char + next_node.predict_word(word, max_char_amt, current=current + max_char, starting_word=start)
                 else:
                     # We found a word which makes up the majority of the words at this part of the Trie, so don't return any more characters and let the function calls higher up return the word.
                     return ""
@@ -378,7 +375,7 @@ class Trie:
                 return max_char
             else:
                 # Standard recursive case
-                return max_char + max_char_node.next.predict_word(word, max_char_amt, words=words, current=current + max_char, starting_word=start)
+                return max_char + max_char_node.next.predict_word(word, max_char_amt, current=current + max_char, starting_word=start)
 
         # We need to work with the first character of the word
         ch = word[0]
@@ -394,7 +391,7 @@ class Trie:
                 return ch
 
             # Predict the next word using the Trie connected to the character's node, passing all but the first character of the current word that was passed into the function.
-            nxt = current_node.next.predict_word(word[1:], current_node.amount, words=words, current=current + ch, starting_word=start)
+            nxt = current_node.next.predict_word(word[1:], current_node.amount, current=current + ch, starting_word=start)
 
             # Case where the function could not predict a word
             if nxt == "":

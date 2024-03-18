@@ -22,7 +22,7 @@ B = TypeVar("B")
 
 def add_dictionaries(target: Dict[A, B], adder: Dict[A, B]) -> Dict[A, B]:
     """Adds 2 dictionaries together, prioritizing the contents of the first dict while not modifying the values."""
-    result_dict = {}
+    result_dict: Dict[A, B] = {}
 
     for key, value in target.items():
         result_dict[key] = value
@@ -119,7 +119,7 @@ class HTMLResultCacheKey:
 
 class App:
     """The App class manages the cost calculator app."""
-    def __init__(self, args=[]) -> None:
+    def __init__(self, args: List[str]=[]) -> None:
         clear()
 
         self.should_print_to_file: bool = len(args) > 1 and args[1] == "-o"
@@ -233,7 +233,7 @@ class App:
     # Returns a dictionary where lists of items are mapped to depths
     def form_depth_dictionary(self, items: Dict[str, int]) -> DepthDictionary:
         """Creates a depth dictionary, which maps depths to a list of ItemStacks."""
-        dct: defaultdict = defaultdict(list)
+        dct: DepthDictionary = defaultdict(list)
 
         # Iterate over each item in the dict, getting the depth and adding its ItemStack to that part of the depth dictionary
         for name, amount in items.items():
@@ -438,7 +438,7 @@ class App:
             items = recipe.inputs
             produces = recipe.amount_produced
 
-            result = {}
+            result: Dict[str, Tuple[int, int]] = {}
            
             for item in items:
                 new_amount = get_cost(amount, item.amount, produces)
